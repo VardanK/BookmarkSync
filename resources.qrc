@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/new/main" lang="English">
+        <file>res/ico/award_star_gold_2.ico</file>
+        <file>res/ico/award_star_gold_3.ico</file>
+        <file>res/ico/award_star_silver_2.ico</file>
+        <file>res/ico/award_star_silver_3.ico</file>
+        <file>res/ico/cog_add.ico</file>
+        <file>res/ico/database_add.ico</file>
+        <file>res/ico/find.ico</file>
+        <file>res/ico/link_add.ico</file>
+        <file>res/ico/star.ico</file>
+        <file>res/ico/world_add.ico</file>
+        <file>res/ico/database_save.ico</file>
+        <file>res/ico/disk.ico</file>
+        <file>res/ico/page_save.ico</file>
+        <file>res/ico/report_disk.ico</file>
+    </qresource>
+</RCC>
