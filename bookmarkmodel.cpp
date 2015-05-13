@@ -6,12 +6,13 @@
 #include <QIcon>
 
 
-TreeItem::TreeItem(const QString &name, int id, EntryType type, TreeItem *parent)
+TreeItem::TreeItem(const QString &name, int id, EntryType type, TreeItem *parent, const QString &link)
 {
     this->name = name;
     this->id = id;
     this->type = type;
     this->parent = parent;
+    this->link = link;
 
     if(this->parent)
         this->parent->addChild(this);
@@ -70,6 +71,17 @@ QVariant TreeItem::getData(int column) const
     return name;
 }
 
+QVariant TreeItem::getLink(int column) const
+{
+    Q_UNUSED(column);
+    return link;
+}
+
+void TreeItem::setName(const QString &newName)
+{
+    name = newName;
+}
+
 TreeItem* TreeItem::getParent()
 {
     return parent;
@@ -124,18 +136,29 @@ QVariant BookmarkModel::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole :
         {
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-            if(item != NULL)
+
+            if(item->getType(index.column()).toInt() == TreeItem::Folder)
             {
-                if(item->getType(index.column()).toInt() == TreeItem::Folder)
-                {
-                    return QIcon(":/new/main/res/ico/folder.ico");
-                }
-                else if(item->getType(index.column()).toInt() == TreeItem::Link)
-                {
-                    return QIcon(":/new/main/res/ico/link.ico");
-                }
+                return QIcon(":/new/main/res/ico/folder.ico");
             }
+            else if(item->getType(index.column()).toInt() == TreeItem::Link)
+            {
+                return QIcon(":/new/main/res/ico/link.ico");
+            }
+
             break;
+        }
+        case Qt::ToolTipRole :
+        {
+            TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+            QString tip;
+
+            if(item->getType(index.column()).toInt() == TreeItem::Link)
+            {
+                tip = item->getLink(index.column()).toString();
+            }
+
+            return tip;
         }
         default:
             break;
@@ -150,6 +173,11 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
     {
     case Qt::EditRole :
         {
+            TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+            if(item != NULL)
+            {
+                item->setName(value.toString());
+            }
             /*Entry e = bookmarks.at(index.row());
             if(e.first == FOLDER)
             {
@@ -172,6 +200,14 @@ QVariant BookmarkModel::headerData(int section, Qt::Orientation orientation, int
             return rootItem->getData(section);
 
     return QVariant();
+}
+
+Qt::ItemFlags BookmarkModel::flags(const QModelIndex &index) const
+{
+    if (!index.isValid())
+            return 0;
+
+    return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
 }
 
 QModelIndex BookmarkModel::index(int row, int column, const QModelIndex &parent) const
@@ -258,6 +294,9 @@ void BookmarkModel::initDatabase()
             bool r = queryAdd.exec("INSERT INTO bookmark_folders (id, parent_id, name) "
                              "VALUES (1, 0, 'Bookmarks'), "
                              "(2, 1, 'Favorites'), "
+                             "(6, 2, 'Home'), "
+                             "(7, 2, 'Work'), "
+                             "(8, 2, 'Hobby'), "
                              "(3, 1, 'Chrome'), "
                              "(4, 1, 'Firefox'), "
                              "(5, 1, 'IE')");
@@ -291,6 +330,12 @@ void BookmarkModel::initDatabase()
                              "(2, 'http://valve.com', '', 'Valve'), "
                              "(3, 'http://google.com', '', 'Google'), "
                              "(2, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(7, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(8, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
                              "(1, 'http://gmail.com', '', 'GMail')");
             if(!r) qDebug() << queryAdd.lastError();
         }
@@ -340,27 +385,6 @@ void BookmarkModel::addFolder(TreeItem* parent)
         return;
     }
 
-    // Get the links first
-    QSqlQuery queryLinks;
-    queryLinks.prepare("SELECT name FROM bookmark_links WHERE folder_id = :folder_id");
-    queryLinks.bindValue(":folder_id", parent->getId());
-    if(queryLinks.exec())
-    {
-        while(queryLinks.next())
-        {
-            QString name = queryLinks.value(0).toString();
-            int id = queryLinks.value(1).toInt();
-
-            new TreeItem(name, id, TreeItem::Link, parent);
-        }
-
-    }
-    else
-    {
-        qDebug() << queryLinks.lastError();
-    }
-
-
     QSqlQuery queryData;
     queryData.prepare("SELECT name,id FROM bookmark_folders WHERE parent_id = :folder_id");
     queryData.bindValue(":folder_id", parent->getId());
@@ -373,4 +397,27 @@ void BookmarkModel::addFolder(TreeItem* parent)
 
         addFolder(new TreeItem(name, id, TreeItem::Folder, parent));
     }
+
+    // Get the links
+    QSqlQuery queryLinks;
+    queryLinks.prepare("SELECT name,id,url FROM bookmark_links WHERE folder_id = :folder_id");
+    queryLinks.bindValue(":folder_id", parent->getId());
+    if(queryLinks.exec())
+    {
+        while(queryLinks.next())
+        {
+            QString name = queryLinks.value(0).toString();
+            int id = queryLinks.value(1).toInt();
+            QString url = queryLinks.value(2).toString();
+
+            new TreeItem(name, id, TreeItem::Link, parent, url);
+        }
+
+    }
+    else
+    {
+        qDebug() << queryLinks.lastError();
+    }
+
+
 }

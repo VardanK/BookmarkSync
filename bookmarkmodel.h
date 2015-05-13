@@ -12,10 +12,13 @@ public:
     enum EntryType {Folder = 0, Link};
 
 public:
-    explicit TreeItem(const QString &name, int id, EntryType type, TreeItem *parent = NULL);
+    explicit TreeItem(const QString &name, int id, EntryType type, TreeItem *parent = NULL, const QString &link = QString());
     ~TreeItem();
 
     void addChild(TreeItem* child);
+
+    void setName(const QString &newName);
+    void setLink(const QString &newName);
 
     TreeItem *child(int num);
     int childCount() const;
@@ -23,6 +26,7 @@ public:
     int row() const;
 
     QVariant getData(int column = 0) const;
+    QVariant getLink(int column = 0) const;
     QVariant getType(int column = 0) const;
     int getId() const;
 
@@ -33,6 +37,7 @@ private:
     QList<TreeItem*> childList;
 
     QString name;
+    QString link;
     EntryType type;
     TreeItem *parent;
     int id;
@@ -53,6 +58,7 @@ public:
     QModelIndex parent(const QModelIndex &child) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+    Qt::ItemFlags flags(const QModelIndex &index) const;
 
 protected:
     QString queryBookmark(int folderId);
