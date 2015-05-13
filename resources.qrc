@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/new/main" lang="English">
+    <qresource lang="English" prefix="/new/main">
         <file>res/ico/award_star_gold_2.ico</file>
         <file>res/ico/award_star_gold_3.ico</file>
         <file>res/ico/award_star_silver_2.ico</file>
@@ -14,5 +14,17 @@
         <file>res/ico/disk.ico</file>
         <file>res/ico/page_save.ico</file>
         <file>res/ico/report_disk.ico</file>
+        <file>res/ico/bin.ico</file>
+        <file>res/ico/bin_empty.ico</file>
+        <file>res/ico/cog.ico</file>
+        <file>res/ico/folder.ico</file>
+        <file>res/ico/help.ico</file>
+        <file>res/ico/link.ico</file>
+        <file>res/ico/link_edit.ico</file>
+        <file>res/ico/page_white_copy.ico</file>
+        <file>res/ico/page_white_paste.ico</file>
+        <file>res/ico/page_white_wrench.ico</file>
+        <file>res/ico/thumb_down.ico</file>
+        <file>res/ico/thumb_up.ico</file>
     </qresource>
 </RCC>

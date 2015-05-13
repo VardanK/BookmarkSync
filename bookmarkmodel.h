@@ -6,10 +6,37 @@
 #include <QSqlDatabase>
 #include <QAbstractItemModel>
 
-enum {FOLDER = 0, BOOKMARK} ENTRY_TYPE;
+class TreeItem
+{
+public:
+    enum EntryType {Folder = 0, Link};
 
-typedef QPair<int, int> Entry; // type and item id
-typedef QList<Entry> EntryList; // row number and
+public:
+    explicit TreeItem(const QString &name, int id, EntryType type, TreeItem *parent = NULL);
+    ~TreeItem();
+
+    void addChild(TreeItem* child);
+
+    TreeItem *child(int num);
+    int childCount() const;
+    int columnCount() const;
+    int row() const;
+
+    QVariant getData(int column = 0) const;
+    QVariant getType(int column = 0) const;
+    int getId() const;
+
+    TreeItem *getParent();
+
+
+private:
+    QList<TreeItem*> childList;
+
+    QString name;
+    EntryType type;
+    TreeItem *parent;
+    int id;
+};
 
 class BookmarkModel : public QAbstractItemModel
 {
@@ -25,6 +52,7 @@ public:
     QModelIndex index(int row, int column, const QModelIndex &parent) const;
     QModelIndex parent(const QModelIndex &child) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const;
 
 protected:
     QString queryBookmark(int folderId);
@@ -36,11 +64,13 @@ protected:
     void setBookmarkName(int id, QString value);
 
     void initDatabase();
-    void initDefaultData();
+    void fillData();
+    void addFolder(TreeItem* parent);
+
 
 protected:
     QSqlDatabase sqlDb;
-    EntryList bookmarks;
+    TreeItem *rootItem;
 };
 
 #endif // BOOKMARKMODEL_H

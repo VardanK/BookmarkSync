@@ -1,11 +1,85 @@
 #include "bookmarkmodel.h"
 
 #include <QSqlQuery>
+#include <QSqlError>
 #include <QDebug>
+#include <QIcon>
+
+
+TreeItem::TreeItem(const QString &name, int id, EntryType type, TreeItem *parent)
+{
+    this->name = name;
+    this->id = id;
+    this->type = type;
+    this->parent = parent;
+
+    if(this->parent)
+        this->parent->addChild(this);
+}
+
+TreeItem::~TreeItem()
+{
+    qDeleteAll(childList);
+}
+
+void TreeItem::addChild(TreeItem* child)
+{
+    childList.append(child);
+}
+
+TreeItem* TreeItem::child(int num)
+{
+    childList.value(num);
+}
+
+int TreeItem::childCount() const
+{
+    childList.size();
+}
+
+int TreeItem::columnCount() const
+{
+    // Wh have onl name to show at thismoment, probably I'll add link later
+    return 1;
+}
+
+int TreeItem::row() const
+{
+    if(parent)
+    {
+        return parent->childList.indexOf(const_cast<TreeItem*>(this));
+    }
+
+    return 0;
+}
+
+int TreeItem::getId() const
+{
+    return id;
+}
+
+QVariant TreeItem::getType(int column) const
+{
+    Q_UNUSED(column);
+    return type;
+}
+
+QVariant TreeItem::getData(int column) const
+{
+    Q_UNUSED(column);
+    return name;
+}
+
+TreeItem* TreeItem::getParent()
+{
+    return parent;
+}
 
 BookmarkModel::BookmarkModel(QObject *parent) : QAbstractItemModel(parent)
 {
+    rootItem = NULL;
     initDatabase();
+    fillData();
 }
 
 BookmarkModel::~BookmarkModel()
@@ -15,30 +89,54 @@ BookmarkModel::~BookmarkModel()
 
 int BookmarkModel::rowCount(const QModelIndex &parent) const
 {
-    return bookmarks.count();
+    TreeItem *parentItem;
+    if(parent.column() > 0)
+        return 0;
+
+    if(!parent.isValid())
+        parentItem = rootItem;
+    else
+        parentItem = static_cast<TreeItem*>(parent.internalPointer());
+
+    return parentItem->childCount();
 }
 
 int BookmarkModel::columnCount(const QModelIndex &parent) const
 {
-    // We have only one column
-    return 1;
+   if(parent.isValid())
+       return static_cast<TreeItem*>(parent.internalPointer())->columnCount();
+
+   return rootItem->columnCount();
 }
 
 QVariant BookmarkModel::data(const QModelIndex &index, int role) const
 {
+    if(!index.isValid())
+        return QVariant();
+
     switch(role)
     {
         case Qt::DisplayRole :
         {
-            Entry e = bookmarks.at(index.row());
-            if(e.first == FOLDER)
-            {
-                return getFolderName(bookmarks.at(index.row()).second);
-            }
-
-            return getBookmarkName(bookmarks.at(index.row()).second);
+            TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+            return item->getData(index.column());
         }
-
+        case Qt::DecorationRole :
+        {
+            TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+            if(item != NULL)
+            {
+                if(item->getType(index.column()).toInt() == TreeItem::Folder)
+                {
+                    return QIcon(":/new/main/res/ico/folder.ico");
+                }
+                else if(item->getType(index.column()).toInt() == TreeItem::Link)
+                {
+                    return QIcon(":/new/main/res/ico/link.ico");
+                }
+            }
+            break;
+        }
         default:
             break;
     }
@@ -52,7 +150,7 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
     {
     case Qt::EditRole :
         {
-            Entry e = bookmarks.at(index.row());
+            /*Entry e = bookmarks.at(index.row());
             if(e.first == FOLDER)
             {
                 setFolderName(bookmarks.at(index.row()).second, value.toString());
@@ -60,7 +158,7 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
             else
             {
                 setBookmarkName(bookmarks.at(index.row()).second, value.toString());
-            }
+            }*/
             break;
         }
     default:
@@ -68,14 +166,45 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
     }
 }
 
+QVariant BookmarkModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+            return rootItem->getData(section);
+
+    return QVariant();
+}
+
 QModelIndex BookmarkModel::index(int row, int column, const QModelIndex &parent) const
 {
-    Q_UNUSED(column);
+    if(!hasIndex(row, column, parent))
+        return QModelIndex();
+
+    TreeItem *parentItem;
+
+    if(!parent.isValid())
+        parentItem = rootItem;
+    else
+        parentItem = static_cast<TreeItem*>(parent.internalPointer());
+
+    TreeItem *childItem = parentItem->child(row);
+    if(childItem)
+        return createIndex(row, column, childItem);
+
+    return QModelIndex();
 }
 
 QModelIndex BookmarkModel::parent(const QModelIndex &child) const
 {
-    ;
+    if(!child.isValid())
+        return QModelIndex();
+
+    TreeItem *childItem = static_cast<TreeItem*>(child.internalPointer());
+    TreeItem *parentItem = childItem->getParent();
+
+    if(parentItem == rootItem)
+        return QModelIndex();
+
+    return createIndex(parentItem->row(), 0, parentItem);
 }
 
 QString BookmarkModel::getFolderName(int id) const
@@ -103,24 +232,18 @@ void BookmarkModel::initDatabase()
     sqlDb = QSqlDatabase::addDatabase("QSQLITE");
     sqlDb.setDatabaseName("bookmarks.sqlite");
 
-    if(sqlDb.open())
+    if(!sqlDb.open())
     {
-        qDebug() << "DB opened!";
-    }
-    else
-    {
-        qDebug() << "Cannot connect to DB";
+        qDebug() << sqlDb.lastError();
+        exit(1);
     }
 
     // Check if tables exist
     QSqlQuery queryTables;
     queryTables.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_folders';");
-    if(queryTables.next())
+    if(!queryTables.next())
     {
-        qDebug() << "Table exists...";
-    }
-    else
-    {
+        //Table does not exist
         QSqlQuery queryCreate;
         queryCreate.prepare("CREATE TABLE bookmark_folders ("
                          "id INTEGER PRIMARY KEY, "
@@ -130,20 +253,25 @@ void BookmarkModel::initDatabase()
 
         if(queryCreate.exec())
         {
-            qDebug() << "Query successfull, folder table created";
+            // Fill with default data
+            QSqlQuery queryAdd;
+            bool r = queryAdd.exec("INSERT INTO bookmark_folders (id, parent_id, name) "
+                             "VALUES (1, 0, 'Bookmarks'), "
+                             "(2, 1, 'Favorites'), "
+                             "(3, 1, 'Chrome'), "
+                             "(4, 1, 'Firefox'), "
+                             "(5, 1, 'IE')");
+
+            if(!r) qDebug() << queryAdd.lastError();
         }
         else
         {
-            qDebug() << "Error creating folder table";
+            qDebug() << queryCreate.lastError();
         }
     }
 
     queryTables.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_links';");
-    if(queryTables.next())
-    {
-        qDebug() << "Table exists...";
-    }
-    else
+    if(!queryTables.next())
     {
         QSqlQuery queryCreate;
         queryCreate.prepare("CREATE TABLE bookmark_links ("
@@ -157,23 +285,92 @@ void BookmarkModel::initDatabase()
         if(queryCreate.exec())
         {
             qDebug() << "Query successfull, links table created";
+            QSqlQuery queryAdd;
+            bool r = queryAdd.exec("INSERT INTO bookmark_links (folder_id, url, tags, name) "
+                             "VALUES (2, 'http://microsoft.com', '', 'Microsoft'), "
+                             "(2, 'http://valve.com', '', 'Valve'), "
+                             "(3, 'http://google.com', '', 'Google'), "
+                             "(2, 'http://mozilla.com', '', 'Mozilla'), "
+                             "(1, 'http://gmail.com', '', 'GMail')");
+            if(!r) qDebug() << queryAdd.lastError();
         }
         else
         {
-            qDebug() << "Error creating links table";
+            qDebug() << queryCreate.lastError();
         }
     }
 
+    sqlDb.close();
 }
 
-void BookmarkModel::initDefaultData()
+void BookmarkModel::fillData()
 {
-    QStringList folders;
-    folders.append("Root");
-    folders.append("Favorites");
-    folders.append("Hobby");
-    folders.append("Work");
-    folders.append("home");
+    if(!sqlDb.open())
+    {
+        qDebug() << sqlDb.lastError();
+        exit(1);
+    }
+
+    // Get the root element!
+    QSqlQuery queryData;
+    queryData.exec("SELECT name,id FROM bookmark_folders WHERE parent_id = '0'");
+
+    if(queryData.next())
+    {
+        QString name = queryData.value(0).toString();
+        int id = queryData.value(1).toInt();
+
+        rootItem = new TreeItem(name, id, TreeItem::Folder);
+        addFolder(rootItem);
+    }
+
+    if(rootItem == NULL)
+    {
+        qDebug() << "DB Corrupted...";
+        exit(2);
+    }
+
+    sqlDb.close();
+}
+
+void BookmarkModel::addFolder(TreeItem* parent)
+{
+    if(parent == NULL)
+    {
+        return;
+    }
+
+    // Get the links first
+    QSqlQuery queryLinks;
+    queryLinks.prepare("SELECT name FROM bookmark_links WHERE folder_id = :folder_id");
+    queryLinks.bindValue(":folder_id", parent->getId());
+    if(queryLinks.exec())
+    {
+        while(queryLinks.next())
+        {
+            QString name = queryLinks.value(0).toString();
+            int id = queryLinks.value(1).toInt();
+
+            new TreeItem(name, id, TreeItem::Link, parent);
+        }
+
+    }
+    else
+    {
+        qDebug() << queryLinks.lastError();
+    }
 
 
+    QSqlQuery queryData;
+    queryData.prepare("SELECT name,id FROM bookmark_folders WHERE parent_id = :folder_id");
+    queryData.bindValue(":folder_id", parent->getId());
+    queryData.exec();
+
+    while(queryData.next())
+    {
+        QString name = queryData.value(0).toString();
+        int id = queryData.value(1).toInt();
+
+        addFolder(new TreeItem(name, id, TreeItem::Folder, parent));
+    }
 }
