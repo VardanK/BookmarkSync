@@ -15,14 +15,17 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     searchlistview.cpp \
-    bookmarkmodel.cpp
+    bookmarkmodel.cpp \
+    addnewlink.cpp
 
 HEADERS  += mainwindow.h \
     searchlistview.h \
-    bookmarkmodel.h
+    bookmarkmodel.h \
+    addnewlink.h
 
 FORMS    += mainwindow.ui \
-    searchlistview.ui
+    searchlistview.ui \
+    addnewlink.ui
 
 RESOURCES += \
     resources.qrc

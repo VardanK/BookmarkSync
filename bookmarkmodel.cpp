@@ -207,7 +207,14 @@ Qt::ItemFlags BookmarkModel::flags(const QModelIndex &index) const
     if (!index.isValid())
             return 0;
 
-    return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+    TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+
+    Qt::ItemFlags flags = QAbstractItemModel::flags(index);
+
+    if(item->getType().toInt() == TreeItem::Link)
+        flags |= Qt::ItemIsEditable;
+
+    return flags;
 }
 
 QModelIndex BookmarkModel::index(int row, int column, const QModelIndex &parent) const

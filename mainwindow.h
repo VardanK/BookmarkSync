@@ -15,6 +15,13 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+private slots:
+    void onShowPreview(const QString& url);
+    void onLoadStarted();
+    void onLoadProgress(int progress);
+    void onLoadFinished(bool st);
+    void onShowAddNewURL();
+
 private:
     Ui::MainWindow *ui;
 };
