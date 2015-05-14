@@ -4,6 +4,8 @@
 #include <QFrame>
 #include <QCompleter>
 
+class QAbstractItemModel;
+
 namespace Ui {
 class SearchListView;
 }
@@ -15,6 +17,9 @@ class SearchListView : public QFrame
 public:
     explicit SearchListView(QWidget *parent = 0);
     ~SearchListView();
+
+public:
+    QAbstractItemModel* model();
 
 signals:
     void urlSelected(const QString& url);

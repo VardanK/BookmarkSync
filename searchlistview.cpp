@@ -41,3 +41,8 @@ void SearchListView::onFilterChanged(const QString &fliter)
     ;
 }
 
+QAbstractItemModel* SearchListView::model()
+{
+    return ui->bookmarks->model();
+}
+

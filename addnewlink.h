@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+class QAbstractItemModel;
+
 namespace Ui {
 class AddNewLink;
 }
@@ -12,7 +14,7 @@ class AddNewLink : public QDialog
     Q_OBJECT
 
 public:
-    explicit AddNewLink(QWidget *parent = 0);
+    explicit AddNewLink(QAbstractItemModel*model, QWidget *parent = 0);
     ~AddNewLink();
 
 private:

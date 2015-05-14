@@ -1,11 +1,12 @@
 #include "addnewlink.h"
 #include "ui_addnewlink.h"
 
+#include <QAbstractItemModel>
 #include <QApplication>
 #include <QClipboard>
 #include <QUrl>
 
-AddNewLink::AddNewLink(QWidget *parent) :
+AddNewLink::AddNewLink(QAbstractItemModel *model, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::AddNewLink)
 {
@@ -22,6 +23,8 @@ AddNewLink::AddNewLink(QWidget *parent) :
             ui->leLink->setText(text);
         }
     }
+
+    ui->cbFolders->setModel(model);
 }
 
 AddNewLink::~AddNewLink()

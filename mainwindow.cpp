@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "addnewlink.h"
+#include "searchlistview.h"
 
 #include <QMessageBox>
 #include <QResource>
@@ -108,7 +109,8 @@ void MainWindow::onLoadFinished(bool st)
 
 void MainWindow::onShowAddNewURL()
 {
-    AddNewLink dlg;
+    SearchListView *slv = ui->navigator;
+    AddNewLink dlg(slv->model());
     if(dlg.exec() == QDialog::Accepted)
     {
         // Add the new URL!
