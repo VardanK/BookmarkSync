@@ -236,7 +236,19 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
 QVariant BookmarkModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
-            return rootItem->getName();
+    {
+        switch(section)
+        {
+            case 0:
+                return rootItem->getName();
+            case 1:
+                return rootItem->getLink();
+            case 2:
+                return rootItem->getType();
+            default:
+                break;
+        }
+    }
 
     return QVariant();
 }
