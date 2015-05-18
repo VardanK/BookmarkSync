@@ -6,13 +6,24 @@
 #include <QSqlDatabase>
 #include <QAbstractItemModel>
 
+namespace ModelUtil
+{
+    enum EntryType {Folder = 0, Link};
+}
+
+struct BookmarkItem
+{
+    int id;
+    ModelUtil::EntryType type;
+    QString url;
+    QString name;
+};
+
 class TreeItem
 {
-public:
-    enum EntryType {Folder = 0, Link};
 
 public:
-    explicit TreeItem(const QString &name, int id, EntryType type, TreeItem *parent = NULL, const QString &link = QString());
+    explicit TreeItem(const QString &name, int id, ModelUtil::EntryType type, TreeItem *parent = NULL, const QString &link = QString());
     ~TreeItem();
 
     void addChild(TreeItem* child);
@@ -25,6 +36,11 @@ public:
     int columnCount() const;
     int row() const;
 
+    bool insertChildren(int position, int count);
+    bool removeChildren(int position, int count);
+
+    int childNumber() const;
+
     QVariant getData(int column = 0) const;
     QVariant getLink(int column = 0) const;
     QVariant getType(int column = 0) const;
@@ -35,12 +51,8 @@ public:
 
 private:
     QList<TreeItem*> childList;
-
-    QString name;
-    QString link;
-    EntryType type;
+    BookmarkItem itemData;
     TreeItem *parent;
-    int id;
 };
 
 class BookmarkModel : public QAbstractItemModel
@@ -61,13 +73,6 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
 protected:
-    QString queryBookmark(int folderId);
-
-    QString getFolderName(int id) const;
-    QString getBookmarkName(int id) const;
-
-    void setFolderName(int id, QString value);
-    void setBookmarkName(int id, QString value);
 
     void initDatabase();
     void fillData();

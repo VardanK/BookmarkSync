@@ -6,13 +6,14 @@
 #include <QIcon>
 
 
-TreeItem::TreeItem(const QString &name, int id, EntryType type, TreeItem *parent, const QString &link)
+TreeItem::TreeItem(const QString &name, int id, ModelUtil::EntryType type, TreeItem *parent, const QString &link)
 {
-    this->name = name;
-    this->id = id;
-    this->type = type;
+    itemData.name = name;
+    itemData.id = id;
+    itemData.type = type;
+    itemData.url = link;
+
     this->parent = parent;
-    this->link = link;
 
     if(this->parent)
         this->parent->addChild(this);
@@ -30,12 +31,12 @@ void TreeItem::addChild(TreeItem* child)
 
 TreeItem* TreeItem::child(int num)
 {
-    childList.value(num);
+    return childList.value(num);
 }
 
 int TreeItem::childCount() const
 {
-    childList.size();
+    return childList.size();
 }
 
 int TreeItem::columnCount() const
@@ -54,32 +55,69 @@ int TreeItem::row() const
     return 0;
 }
 
+bool TreeItem::insertChildren(int position, int count)
+{
+    if(position < 0 || position > childList.size())
+        return false;
+
+    for(int r = 0; r < count; ++r)
+    {
+        TreeItem *item = new TreeItem("DEFAULT", -1, ModelUtil::Link, this);
+        childList.insert(position, item);
+    }
+
+    return true;
+}
+
+bool TreeItem::removeChildren(int position, int count)
+{
+    if(position < 0 || (position + count) > childList.size())
+        return false;
+
+    for(int r = 0; r < count; ++r)
+    {
+        delete childList.takeAt(position);
+    }
+
+    return true;
+}
+
+int TreeItem::childNumber() const
+{
+    if(parent != NULL)
+    {
+        return parent->childList.indexOf(const_cast<TreeItem*>(this));
+    }
+
+    return 0;
+}
+
 int TreeItem::getId() const
 {
-    return id;
+    return itemData.id;
 }
 
 QVariant TreeItem::getType(int column) const
 {
     Q_UNUSED(column);
-    return type;
+    return itemData.type;
 }
 
 QVariant TreeItem::getData(int column) const
 {
     Q_UNUSED(column);
-    return name;
+    return itemData.name;
 }
 
 QVariant TreeItem::getLink(int column) const
 {
     Q_UNUSED(column);
-    return link;
+    return itemData.url;
 }
 
 void TreeItem::setName(const QString &newName)
 {
-    name = newName;
+    itemData.name = newName;
 }
 
 TreeItem* TreeItem::getParent()
@@ -137,11 +175,11 @@ QVariant BookmarkModel::data(const QModelIndex &index, int role) const
         {
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
 
-            if(item->getType(index.column()).toInt() == TreeItem::Folder)
+            if(item->getType(index.column()).toInt() == ModelUtil::Folder)
             {
                 return QIcon(":/new/main/res/ico/folder.ico");
             }
-            else if(item->getType(index.column()).toInt() == TreeItem::Link)
+            else if(item->getType(index.column()).toInt() == ModelUtil::Link)
             {
                 return QIcon(":/new/main/res/ico/link.ico");
             }
@@ -153,7 +191,7 @@ QVariant BookmarkModel::data(const QModelIndex &index, int role) const
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
             QString tip;
 
-            if(item->getType(index.column()).toInt() == TreeItem::Link)
+            if(item->getType(index.column()).toInt() == ModelUtil::Link)
             {
                 tip = item->getLink(index.column()).toString();
             }
@@ -178,6 +216,8 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
             {
                 item->setName(value.toString());
             }
+
+            return true;
             /*Entry e = bookmarks.at(index.row());
             if(e.first == FOLDER)
             {
@@ -187,11 +227,13 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
             {
                 setBookmarkName(bookmarks.at(index.row()).second, value.toString());
             }*/
-            break;
+            //break;
         }
     default:
         break;
     }
+
+    return false;
 }
 
 QVariant BookmarkModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -211,7 +253,7 @@ Qt::ItemFlags BookmarkModel::flags(const QModelIndex &index) const
 
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-    if(item->getType().toInt() == TreeItem::Link)
+    if(item->getType().toInt() == ModelUtil::Link)
         flags |= Qt::ItemIsEditable;
 
     return flags;
@@ -248,26 +290,6 @@ QModelIndex BookmarkModel::parent(const QModelIndex &child) const
         return QModelIndex();
 
     return createIndex(parentItem->row(), 0, parentItem);
-}
-
-QString BookmarkModel::getFolderName(int id) const
-{
-    return "";
-}
-
-QString BookmarkModel::getBookmarkName(int id) const
-{
-    return "";
-}
-
-void BookmarkModel::setFolderName(int id, QString value)
-{
-    ;
-}
-
-void BookmarkModel::setBookmarkName(int id, QString value)
-{
-    ;
 }
 
 void BookmarkModel::initDatabase()
@@ -372,7 +394,7 @@ void BookmarkModel::fillData()
         QString name = queryData.value(0).toString();
         int id = queryData.value(1).toInt();
 
-        rootItem = new TreeItem(name, id, TreeItem::Folder);
+        rootItem = new TreeItem(name, id, ModelUtil::Folder);
         addFolder(rootItem);
     }
 
@@ -402,7 +424,7 @@ void BookmarkModel::addFolder(TreeItem* parent)
         QString name = queryData.value(0).toString();
         int id = queryData.value(1).toInt();
 
-        addFolder(new TreeItem(name, id, TreeItem::Folder, parent));
+        addFolder(new TreeItem(name, id, ModelUtil::Folder, parent));
     }
 
     // Get the links
@@ -417,7 +439,7 @@ void BookmarkModel::addFolder(TreeItem* parent)
             int id = queryLinks.value(1).toInt();
             QString url = queryLinks.value(2).toString();
 
-            new TreeItem(name, id, TreeItem::Link, parent, url);
+            new TreeItem(name, id, ModelUtil::Link, parent, url);
         }
 
     }
