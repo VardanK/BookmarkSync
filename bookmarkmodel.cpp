@@ -97,21 +97,18 @@ int TreeItem::getId() const
     return itemData.id;
 }
 
-QVariant TreeItem::getType(int column) const
+ModelUtil::EntryType TreeItem::getType() const
 {
-    Q_UNUSED(column);
     return itemData.type;
 }
 
-QVariant TreeItem::getData(int column) const
+QString TreeItem::getName() const
 {
-    Q_UNUSED(column);
     return itemData.name;
 }
 
-QVariant TreeItem::getLink(int column) const
+QString TreeItem::getLink() const
 {
-    Q_UNUSED(column);
     return itemData.url;
 }
 
@@ -169,17 +166,17 @@ QVariant BookmarkModel::data(const QModelIndex &index, int role) const
         case Qt::DisplayRole :
         {
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-            return item->getData(index.column());
+            return item->getName();
         }
         case Qt::DecorationRole :
         {
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
 
-            if(item->getType(index.column()).toInt() == ModelUtil::Folder)
+            if(item->getType() == ModelUtil::Folder)
             {
                 return QIcon(":/new/main/res/ico/folder.ico");
             }
-            else if(item->getType(index.column()).toInt() == ModelUtil::Link)
+            else if(item->getType() == ModelUtil::Link)
             {
                 return QIcon(":/new/main/res/ico/link.ico");
             }
@@ -191,9 +188,9 @@ QVariant BookmarkModel::data(const QModelIndex &index, int role) const
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
             QString tip;
 
-            if(item->getType(index.column()).toInt() == ModelUtil::Link)
+            if(item->getType() == ModelUtil::Link)
             {
-                tip = item->getLink(index.column()).toString();
+                tip = item->getLink();
             }
 
             return tip;
@@ -239,7 +236,7 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
 QVariant BookmarkModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
-            return rootItem->getData(section);
+            return rootItem->getName();
 
     return QVariant();
 }
@@ -253,7 +250,7 @@ Qt::ItemFlags BookmarkModel::flags(const QModelIndex &index) const
 
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-    if(item->getType().toInt() == ModelUtil::Link)
+    if(item->getType() == ModelUtil::Link)
         flags |= Qt::ItemIsEditable;
 
     return flags;

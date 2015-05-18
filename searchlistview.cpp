@@ -31,8 +31,8 @@ void SearchListView::onListItemSelected(const QModelIndex & index)
     if(index.isValid())
     {
         TreeItem *itm = static_cast<TreeItem*>(index.internalPointer());
-        if(itm != NULL && itm->getType().toInt() == ModelUtil::Link)
-            emit urlSelected(itm->getLink().toString());
+        if(itm != NULL && itm->getType() == ModelUtil::Link)
+            emit urlSelected(itm->getLink());
     }
 }
 

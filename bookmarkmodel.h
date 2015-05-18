@@ -41,9 +41,9 @@ public:
 
     int childNumber() const;
 
-    QVariant getData(int column = 0) const;
-    QVariant getLink(int column = 0) const;
-    QVariant getType(int column = 0) const;
+    QString getName() const;
+    QString getLink() const;
+    ModelUtil::EntryType getType() const;
     int getId() const;
 
     TreeItem *getParent();
