@@ -5,6 +5,7 @@
 #include <QCompleter>
 
 class QAbstractItemModel;
+class BookmarkModel;
 
 namespace Ui {
 class SearchListView;
@@ -19,15 +20,20 @@ public:
     ~SearchListView();
 
 public:
-    QAbstractItemModel* model();
+    BookmarkModel* model();
 
 signals:
     void urlSelected(const QString& url);
+    void addBookmark(const QModelIndex& parent);
+    void removeBookmark(const QModelIndex& item);
+
+    void addFolder(const QModelIndex& parent);
+    void removeFolder(const QModelIndex& item);
 
 private slots:
     void onListItemSelected(const QModelIndex & index);
     void onFilterChanged(const QString &fliter);
-
+    void onCustomContextMenu(const QPoint& pos);
 private:
     Ui::SearchListView *ui;
     QCompleter *completer;

@@ -5,14 +5,39 @@
 #include <QDebug>
 #include <QIcon>
 
-
-TreeItem::TreeItem(const QString &name, int id, ModelUtil::EntryType type, TreeItem *parent, const QString &link)
+BookmarkItem::BookmarkItem(const BookmarkItem& item)
 {
-    itemData.name = name;
-    itemData.id = id;
-    itemData.type = type;
-    itemData.url = link;
+    BookmarkItem(item.name, item.url, item.id, item.type);
+}
 
+BookmarkItem::BookmarkItem(const QString &nm,
+                           const QString &ln,
+                           int i,
+                           ModelUtil::EntryType tp)
+{
+    name = nm;
+    url = ln;
+    id = i;
+    type = tp;
+}
+
+TreeItem::TreeItem(const QString &name,
+                   int id,
+                   ModelUtil::EntryType type,
+                   const QString &link,
+                   TreeItem *parent)
+    : itemData(name, link, id, type)
+{
+    this->parent = parent;
+
+    if(this->parent)
+        this->parent->addChild(this);
+}
+
+TreeItem::TreeItem(const BookmarkItem &item,
+                   TreeItem *parent)
+    : itemData(item)
+{
     this->parent = parent;
 
     if(this->parent)
@@ -60,10 +85,11 @@ bool TreeItem::insertChildren(int position, int count)
     if(position < 0 || position > childList.size())
         return false;
 
+    BookmarkItem defaultItem;
+
     for(int r = 0; r < count; ++r)
     {
-        TreeItem *item = new TreeItem("DEFAULT", -1, ModelUtil::Link, this);
-        childList.insert(position, item);
+        insertChild(position, defaultItem);
     }
 
     return true;
@@ -76,20 +102,30 @@ bool TreeItem::removeChildren(int position, int count)
 
     for(int r = 0; r < count; ++r)
     {
-        delete childList.takeAt(position);
+        removeChild(position);
     }
 
     return true;
 }
 
-int TreeItem::childNumber() const
+bool TreeItem::insertChild(int position, const BookmarkItem &data)
 {
-    if(parent != NULL)
-    {
-        return parent->childList.indexOf(const_cast<TreeItem*>(this));
-    }
+    if(position < 0 || position > childList.size())
+        return false;
 
-    return 0;
+    TreeItem *item = new TreeItem(data, this);
+    childList.insert(position, item);
+
+    return true;
+}
+
+bool TreeItem::removeChild(int position)
+{
+    if(position < 0 || position >= childList.size())
+        return false;
+
+    delete childList.takeAt(position);
+    return true;
 }
 
 int TreeItem::getId() const
@@ -301,6 +337,28 @@ QModelIndex BookmarkModel::parent(const QModelIndex &child) const
     return createIndex(parentItem->row(), 0, parentItem);
 }
 
+bool BookmarkModel::insertRows(int row, int count, const QModelIndex &parent) const
+{
+    return getItem(parent)->insertChildren(row, count);
+}
+bool BookmarkModel::removeRows(int row, int count, const QModelIndex &parent) const
+{
+    return getItem(parent)->removeChildren(row, count);
+}
+
+TreeItem* BookmarkModel::getItem(const QModelIndex &index) const
+{
+    if(index.isValid())
+    {
+
+        TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+        if(item)
+            return item;
+    }
+
+    return rootItem;
+}
+
 void BookmarkModel::initDatabase()
 {
     sqlDb = QSqlDatabase::addDatabase("QSQLITE");
@@ -403,7 +461,7 @@ void BookmarkModel::fillData()
         QString name = queryData.value(0).toString();
         int id = queryData.value(1).toInt();
 
-        rootItem = new TreeItem(name, id, ModelUtil::Folder);
+        rootItem = new TreeItem(name, id, ModelUtil::Folder, "Root Item");
         addFolder(rootItem);
     }
 
@@ -433,7 +491,7 @@ void BookmarkModel::addFolder(TreeItem* parent)
         QString name = queryData.value(0).toString();
         int id = queryData.value(1).toInt();
 
-        addFolder(new TreeItem(name, id, ModelUtil::Folder, parent));
+        addFolder(new TreeItem(name, id, ModelUtil::Folder, "Folder", parent));
     }
 
     // Get the links
@@ -448,7 +506,7 @@ void BookmarkModel::addFolder(TreeItem* parent)
             int id = queryLinks.value(1).toInt();
             QString url = queryLinks.value(2).toString();
 
-            new TreeItem(name, id, ModelUtil::Link, parent, url);
+            new TreeItem(name, id, ModelUtil::Link, url, parent);
         }
 
     }

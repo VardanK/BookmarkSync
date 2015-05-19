@@ -59,7 +59,59 @@
     </widget>
    </item>
   </layout>
+  <action name="actionAddBookmark">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/new/main/res/ico/link_add.ico</normaloff>:/new/main/res/ico/link_add.ico</iconset>
+   </property>
+   <property name="text">
+    <string>Add Bookmark</string>
+   </property>
+   <property name="toolTip">
+    <string>Add new URL</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionRemoveBookmark">
+   <property name="text">
+    <string>Remove Bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionAddFolder">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/new/main/res/ico/folder.ico</normaloff>:/new/main/res/ico/folder.ico</iconset>
+   </property>
+   <property name="text">
+    <string>Add Folder</string>
+   </property>
+   <property name="toolTip">
+    <string>Add new folder</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionRemoveFolder">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/new/main/res/ico/bin.ico</normaloff>:/new/main/res/ico/bin.ico</iconset>
+   </property>
+   <property name="text">
+    <string>Remove Folder</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

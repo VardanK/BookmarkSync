@@ -56,12 +56,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->webPreview->setHtml(welcomePage.arg("#B6B6B6"));
 
-    connect(ui->navigator, SIGNAL(urlSelected(QString)), this, SLOT(onShowPreview(QString)));
-    connect(ui->webPreview, SIGNAL(loadStarted()),  this, SLOT(onLoadStarted()));
-    connect(ui->webPreview, SIGNAL(loadProgress(int)),  this, SLOT(onLoadProgress(int)));
-    connect(ui->webPreview, SIGNAL(loadFinished(bool)),  this, SLOT(onLoadFinished(bool)));
+    connect(ui->navigator, SIGNAL(urlSelected(QString)),
+            this, SLOT(onShowPreview(QString)));
 
-    connect(ui->actionAdd_Url, SIGNAL(triggered()), this, SLOT(onShowAddNewURL()));
+    connect(ui->webPreview, SIGNAL(loadStarted()),
+            this, SLOT(onLoadStarted()));
+
+    connect(ui->webPreview, SIGNAL(loadProgress(int)),
+            this, SLOT(onLoadProgress(int)));
+
+    connect(ui->webPreview, SIGNAL(loadFinished(bool)),
+            this, SLOT(onLoadFinished(bool)));
+
+    connect(ui->actionAdd_Url, SIGNAL(triggered()),
+            this, SLOT(onShowAddNewURL()));
+
+    connect(ui->navigator, SIGNAL(addBookmark(QModelIndex)),
+            this, SLOT(onShowAddNewURL(QModelIndex)));
 }
 
 MainWindow::~MainWindow()
@@ -107,14 +118,12 @@ void MainWindow::onLoadFinished(bool st)
     setCursor(Qt::ArrowCursor);
 }
 
-void MainWindow::onShowAddNewURL()
+void MainWindow::onShowAddNewURL(const QModelIndex &index)
 {
     SearchListView *slv = ui->navigator;
-    AddNewLink dlg(slv->model());
+    AddNewLink dlg(slv->model(), index);
     if(dlg.exec() == QDialog::Accepted)
     {
         // Add the new URL!
     }
-
-
 }

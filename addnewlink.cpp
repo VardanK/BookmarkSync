@@ -1,12 +1,19 @@
 #include "addnewlink.h"
 #include "ui_addnewlink.h"
 
+#include "bookmarkmodel.h"
+
 #include <QAbstractItemModel>
 #include <QApplication>
+#include <QMouseEvent>
 #include <QClipboard>
+#include <QTreeView>
+#include <QDebug>
 #include <QUrl>
 
-AddNewLink::AddNewLink(QAbstractItemModel *model, QWidget *parent) :
+AddNewLink::AddNewLink(BookmarkModel *model,
+                       const QModelIndex& parentIndex,
+                       QWidget *parent) :
     QDialog(parent),
     ui(new Ui::AddNewLink)
 {
@@ -16,15 +23,46 @@ AddNewLink::AddNewLink(QAbstractItemModel *model, QWidget *parent) :
     if(clipboard)
     {
         QString text = clipboard->text();
-        // Check if it is correct URL
-        QUrl url(text, QUrl::StrictMode);
-        if(url.isValid())
+        if( text.startsWith("http:") ||
+            text.startsWith("ftp:") ||
+            text.startsWith("https:") ||
+            text.startsWith("www."))
         {
             ui->leLink->setText(text);
         }
     }
 
+    QTreeView *treeView = new QTreeView(ui->cbFolders);
+    treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    ui->cbFolders->setView(treeView);
     ui->cbFolders->setModel(model);
+
+    ui->cbFolders->view()->viewport()->installEventFilter(this);
+
+
+    if(parentIndex.isValid())
+    {
+        ui->cbFolders->view()->selectionModel()->select(parentIndex, QItemSelectionModel::Select);
+        ui->cbFolders->setCurrentText(parentIndex.data().toString());
+    }
+
+}
+
+bool AddNewLink::eventFilter(QObject* object, QEvent* event)
+{
+    if (event->type() == QEvent::MouseButtonRelease && object == ui->cbFolders->view()->viewport())
+    {
+        // Combo box will try to close the view on mouse release
+        // It is not good you user clicks on expand button, so look for that case and
+        // filter the event by returning true
+        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        QModelIndex index = ui->cbFolders->view()->indexAt(mouseEvent->pos());
+        if (!ui->cbFolders->view()->visualRect(index).contains(mouseEvent->pos()))
+            return true;
+
+    }
+    return false;
 }
 
 AddNewLink::~AddNewLink()

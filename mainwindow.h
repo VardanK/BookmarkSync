@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QModelIndex>
 #include <QMainWindow>
 
 namespace Ui {
@@ -20,7 +21,7 @@ private slots:
     void onLoadStarted();
     void onLoadProgress(int progress);
     void onLoadFinished(bool st);
-    void onShowAddNewURL();
+    void onShowAddNewURL(const QModelIndex &index = QModelIndex());
 
 private:
     Ui::MainWindow *ui;
