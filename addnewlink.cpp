@@ -34,17 +34,25 @@ AddNewLink::AddNewLink(BookmarkModel *model,
 
     QTreeView *treeView = new QTreeView(ui->cbFolders);
     treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    treeView->setAnimated(true);
 
-    ui->cbFolders->setView(treeView);
     ui->cbFolders->setModel(model);
+    ui->cbFolders->setView(treeView);
 
     ui->cbFolders->view()->viewport()->installEventFilter(this);
 
-
     if(parentIndex.isValid())
     {
-        ui->cbFolders->view()->selectionModel()->select(parentIndex, QItemSelectionModel::Select);
+        QModelIndex parentIdx = parentIndex;
+        do
+        {
+            treeView->setExpanded(parentIdx, true);
+            parentIdx = parentIdx.parent();
+        }while(parentIdx.isValid());
+
+        treeView->selectionModel()->select(parentIndex, QItemSelectionModel::Select);
         ui->cbFolders->setCurrentText(parentIndex.data().toString());
+
     }
 
 }
