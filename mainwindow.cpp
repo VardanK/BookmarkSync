@@ -39,9 +39,9 @@ namespace {
                 "<title>BookmarkSync  - version %1.%2</title>"
             "</head>"
             "<body style='background-color:%3;'>"
-            "<h1 style='text-align: center;'>Sorry, something went wrong.</h1>"
+            "<h1 style='text-align: center; color: %4;'>Sorry, something went wrong.</h1>"
 
-            "<p>Cannot load page - %4.</p>"
+            "<p style='color: %4;'>Cannot load page - %5.</p>"
             "</body>"
             "</html>"
             ).arg(major_version).arg(minor_version);
@@ -82,7 +82,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::onShowPreview(const QString &address)
 {
-    QUrl url(address);
+    QUrl url(address, QUrl::StrictMode);
+    if(url.scheme().isEmpty())
+    {
+        url.setScheme("http");
+    }
+
     ui->webPreview->setUrl(url);
     ui->webPreview->load(url);
 }
@@ -106,7 +111,8 @@ void MainWindow::onLoadFinished(bool st)
     {
         ui->webPreview->setHtml(
                     errorPage.
-                    arg("#FF4081").
+                    arg("#3686BE"). // bg color
+                    arg("#F7F9FB"). // txt color
                     arg(ui->webPreview->url().toString()));
         ui->statusBar->showMessage("Error loading data", longDelay);
     }
@@ -121,9 +127,6 @@ void MainWindow::onLoadFinished(bool st)
 void MainWindow::onShowAddNewURL(const QModelIndex &index)
 {
     SearchListView *slv = ui->navigator;
-    AddNewLink dlg(slv->model(), index);
-    if(dlg.exec() == QDialog::Accepted)
-    {
-        // Add the new URL!
-    }
+    AddNewLink *dlg = new AddNewLink(slv->model(), index);
+    dlg->exec();
 }

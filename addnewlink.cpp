@@ -11,11 +11,12 @@
 #include <QDebug>
 #include <QUrl>
 
-AddNewLink::AddNewLink(BookmarkModel *model,
+AddNewLink::AddNewLink(BookmarkModel *md,
                        const QModelIndex& parentIndex,
                        QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::AddNewLink)
+    ui(new Ui::AddNewLink),
+    model(md)
 {
     ui->setupUi(this);
 
@@ -43,18 +44,20 @@ AddNewLink::AddNewLink(BookmarkModel *model,
 
     if(parentIndex.isValid())
     {
-        QModelIndex parentIdx = parentIndex;
+        /*QModelIndex parentIdx = parentIndex;
         do
         {
             treeView->setExpanded(parentIdx, true);
             parentIdx = parentIdx.parent();
         }while(parentIdx.isValid());
 
-        treeView->selectionModel()->select(parentIndex, QItemSelectionModel::Select);
+        */
+        //treeView->selectionModel()->select(parentIndex, QItemSelectionModel::Select);
         ui->cbFolders->setCurrentText(parentIndex.data().toString());
 
     }
 
+    connect(this,SIGNAL(accepted()), this, SLOT(onAccepted()));
 }
 
 bool AddNewLink::eventFilter(QObject* object, QEvent* event)
@@ -76,4 +79,18 @@ bool AddNewLink::eventFilter(QObject* object, QEvent* event)
 AddNewLink::~AddNewLink()
 {
     delete ui;
+}
+
+void AddNewLink::onAccepted()
+{
+    QString url = ui->leLink->text();
+    QString name = ui->leName->text();
+    QString tags = ui->leTags->text();
+
+    BookmarkItem item(name, url, tags, -1, ModelUtil::Link);
+    ui->cbFolders->itemData(ui->cbFolders->currentIndex());
+    QModelIndex index = ui->cbFolders->view()->currentIndex();
+
+    if(index.isValid())
+        model->insertRow(model->rowCount(index), index, item);
 }

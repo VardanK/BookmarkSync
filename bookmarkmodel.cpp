@@ -5,18 +5,20 @@
 #include <QDebug>
 #include <QIcon>
 
-BookmarkItem::BookmarkItem(const BookmarkItem& item)
+BookmarkItem::BookmarkItem(const BookmarkItem& item):
+    BookmarkItem(item.name, item.url, item.tags, item.id, item.type)
 {
-    BookmarkItem(item.name, item.url, item.id, item.type);
 }
 
 BookmarkItem::BookmarkItem(const QString &nm,
                            const QString &ln,
+                           const QString &tg,
                            int i,
                            ModelUtil::EntryType tp)
 {
     name = nm;
     url = ln;
+    tags = tg;
     id = i;
     type = tp;
 }
@@ -25,13 +27,11 @@ TreeItem::TreeItem(const QString &name,
                    int id,
                    ModelUtil::EntryType type,
                    const QString &link,
+                   const QString &tags,
                    TreeItem *parent)
-    : itemData(name, link, id, type)
+    : itemData(name, link, tags, id, type)
 {
     this->parent = parent;
-
-    if(this->parent)
-        this->parent->addChild(this);
 }
 
 TreeItem::TreeItem(const BookmarkItem &item,
@@ -39,9 +39,6 @@ TreeItem::TreeItem(const BookmarkItem &item,
     : itemData(item)
 {
     this->parent = parent;
-
-    if(this->parent)
-        this->parent->addChild(this);
 }
 
 TreeItem::~TreeItem()
@@ -91,6 +88,17 @@ bool TreeItem::insertChildren(int position, int count)
     {
         insertChild(position, defaultItem);
     }
+
+    return true;
+}
+
+
+bool TreeItem::insertChildren(int position, const BookmarkItem &item)
+{
+    if(position < 0 || position > childList.size())
+        return false;
+
+    insertChild(position, item);
 
     return true;
 }
@@ -337,13 +345,28 @@ QModelIndex BookmarkModel::parent(const QModelIndex &child) const
     return createIndex(parentItem->row(), 0, parentItem);
 }
 
-bool BookmarkModel::insertRows(int row, int count, const QModelIndex &parent) const
+bool BookmarkModel::insertRows(int row, int count, const QModelIndex &parent)
 {
-    return getItem(parent)->insertChildren(row, count);
+    beginInsertRows(parent, row, row+count);
+    bool ret = getItem(parent)->insertChildren(row, count);
+    endInsertRows();
+    return ret;
 }
-bool BookmarkModel::removeRows(int row, int count, const QModelIndex &parent) const
+
+bool BookmarkModel::removeRows(int row, int count, const QModelIndex &parent)
 {
-    return getItem(parent)->removeChildren(row, count);
+    beginRemoveRows(parent, row, row+count);
+    bool ret = getItem(parent)->removeChildren(row, count);
+    endRemoveRows();
+    return ret;
+}
+
+bool BookmarkModel::insertRow(int row, const QModelIndex &parent, const BookmarkItem &item)
+{
+    beginInsertRows(parent, row, row+1);
+    bool ret = getItem(parent)->insertChild(row, item);
+    endInsertRows();
+    return ret;
 }
 
 TreeItem* BookmarkModel::getItem(const QModelIndex &index) const
@@ -461,7 +484,7 @@ void BookmarkModel::fillData()
         QString name = queryData.value(0).toString();
         int id = queryData.value(1).toInt();
 
-        rootItem = new TreeItem(name, id, ModelUtil::Folder, "Root Item");
+        rootItem = new TreeItem(name, id, ModelUtil::Folder, "Root Item", "");
         addFolder(rootItem);
     }
 
@@ -491,7 +514,9 @@ void BookmarkModel::addFolder(TreeItem* parent)
         QString name = queryData.value(0).toString();
         int id = queryData.value(1).toInt();
 
-        addFolder(new TreeItem(name, id, ModelUtil::Folder, "Folder", parent));
+        TreeItem *item = new TreeItem(name, id, ModelUtil::Folder, "Folder", QString(""), parent);
+        parent->addChild(item);
+        addFolder(item);
     }
 
     // Get the links
@@ -506,7 +531,8 @@ void BookmarkModel::addFolder(TreeItem* parent)
             int id = queryLinks.value(1).toInt();
             QString url = queryLinks.value(2).toString();
 
-            new TreeItem(name, id, ModelUtil::Link, url, parent);
+            TreeItem *item = new TreeItem(name, id, ModelUtil::Link, url, QString(""), parent);
+            parent->addChild(item);
         }
 
     }

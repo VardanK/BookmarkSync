@@ -16,6 +16,7 @@ struct BookmarkItem
     BookmarkItem(const BookmarkItem& item);
     BookmarkItem(const QString &nm = QString("DEFAULT"),
                  const QString &ln = QString("no_url"),
+                 const QString &tg = QString(""),
                  int i = -1,
                  ModelUtil::EntryType tp = ModelUtil::Invalid);
 
@@ -23,6 +24,7 @@ struct BookmarkItem
     ModelUtil::EntryType type;
     QString url;
     QString name;
+    QString tags;
 };
 
 class TreeItem
@@ -33,6 +35,7 @@ public:
                       int id,
                       ModelUtil::EntryType type,
                       const QString &link,
+                      const QString &tags,
                       TreeItem *parent = NULL);
 
     explicit TreeItem(const BookmarkItem &item,
@@ -51,6 +54,7 @@ public:
     int row() const;
 
     bool insertChildren(int position, int count);
+    bool insertChildren(int position, const BookmarkItem &item);
     bool removeChildren(int position, int count);
 
     bool insertChild(int position, const BookmarkItem &data);
@@ -86,8 +90,9 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
-    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) const;
-    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) const;
+    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex());
+    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
+    bool insertRow(int row, const QModelIndex &index, const BookmarkItem &item);
 
     TreeItem* getItem(const QModelIndex &index) const;
 
