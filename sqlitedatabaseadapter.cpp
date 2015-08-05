@@ -3,6 +3,7 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
+#include <QDebug>
 
 namespace DatabaseUtils
 {
@@ -83,7 +84,7 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -126,7 +127,7 @@ QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong fol
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -165,7 +166,7 @@ qlonglong SQLiteDatabaseAdapter::createFolder(const QString &name, qlonglong par
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -202,7 +203,7 @@ qlonglong SQLiteDatabaseAdapter::moveFolder  (qlonglong folderId, qlonglong newP
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -239,7 +240,7 @@ qlonglong SQLiteDatabaseAdapter::renameFolder(qlonglong folderId, const QString 
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -279,7 +280,7 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -314,7 +315,7 @@ qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -356,7 +357,7 @@ qlonglong SQLiteDatabaseAdapter::createLink(const QString &name, const QString &
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -393,7 +394,7 @@ qlonglong SQLiteDatabaseAdapter::moveLink  (qlonglong linkId, qlonglong newParen
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -430,7 +431,7 @@ qlonglong SQLiteDatabaseAdapter::renameLink(qlonglong linkId, const QString &new
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -475,7 +476,7 @@ qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &new
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 
@@ -510,7 +511,7 @@ qlonglong SQLiteDatabaseAdapter::deleteLink(qlonglong linkId)
         }
         else
         {
-            qDebug() << queryAdd.lastError();
+            qDebug() << query.lastError();
         }
     }
 

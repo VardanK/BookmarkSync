@@ -168,14 +168,12 @@ TreeItem* TreeItem::getParent()
 
 BookmarkModel::BookmarkModel(QObject *parent) : QAbstractItemModel(parent)
 {
-    rootItem = NULL;
-    initDatabase();
+    rootItem = nullptr;
     fillData();
 }
 
 BookmarkModel::~BookmarkModel()
 {
-    sqlDb.close();
 }
 
 int BookmarkModel::rowCount(const QModelIndex &parent) const
@@ -253,7 +251,7 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
     case Qt::EditRole :
         {
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-            if(item != NULL && !value.toString().isEmpty())
+            if(item != nullptr && !value.toString().isEmpty())
             {
                 item->setName(value.toString());
             }
@@ -382,158 +380,37 @@ TreeItem* BookmarkModel::getItem(const QModelIndex &index) const
     return rootItem;
 }
 
-void BookmarkModel::initDatabase()
-{
-    sqlDb = QSqlDatabase::addDatabase("QSQLITE");
-    sqlDb.setDatabaseName("bookmarks.sqlite");
-
-    // Check if tables exist
-    QSqlQuery queryTables;
-    queryTables.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_folders';");
-    if(!queryTables.next())
-    {
-        //Table does not exist
-        QSqlQuery queryCreate;
-        queryCreate.prepare("CREATE TABLE bookmark_folders ("
-                         "id INTEGER PRIMARY KEY, "
-                         "parent_id INTEGER, "
-                         "name TEXT"
-                         ");");
-
-        if(queryCreate.exec())
-        {
-            // Fill with default data
-            QSqlQuery queryAdd;
-            bool r = queryAdd.exec("INSERT INTO bookmark_folders (id, parent_id, name) "
-                             "VALUES (1, 0, 'Bookmarks'), "
-                             "(2, 1, 'Favorites'), "
-                             "(6, 2, 'Home'), "
-                             "(7, 2, 'Work'), "
-                             "(8, 2, 'Hobby'), "
-                             "(3, 1, 'Chrome'), "
-                             "(4, 1, 'Firefox'), "
-                             "(5, 1, 'IE')");
-
-            if(!r) qDebug() << queryAdd.lastError();
-        }
-        else
-        {
-            qDebug() << queryCreate.lastError();
-        }
-    }
-
-    queryTables.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_links';");
-    if(!queryTables.next())
-    {
-        QSqlQuery queryCreate;
-        queryCreate.prepare("CREATE TABLE bookmark_links ("
-                         "id INTEGER PRIMARY KEY, "
-                         "folder_id INTEGER, "
-                         "url TEXT, "
-                         "tags TEXT, "
-                         "name TEXT"
-                         ");");
-
-        if(queryCreate.exec())
-        {
-            qDebug() << "Query successfull, links table created";
-            QSqlQuery queryAdd;
-            bool r = queryAdd.exec("INSERT INTO bookmark_links (folder_id, url, tags, name) "
-                             "VALUES (2, 'http://microsoft.com', '', 'Microsoft'), "
-                             "(2, 'http://valve.com', '', 'Valve'), "
-                             "(3, 'http://google.com', '', 'Google'), "
-                             "(2, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(7, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(8, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(6, 'http://mozilla.com', '', 'Mozilla'), "
-                             "(1, 'http://gmail.com', '', 'GMail')");
-            if(!r) qDebug() << queryAdd.lastError();
-        }
-        else
-        {
-            qDebug() << queryCreate.lastError();
-        }
-    }
-
-    sqlDb.close();
-}
-
 void BookmarkModel::fillData()
 {
-    if(!sqlDb.open())
+    if(rootItem == nullptr)
     {
-        qDebug() << sqlDb.lastError();
-        exit(1);
+        rootItem = new TreeItem("Root Folder", 0, ModelUtil::Folder, "Root Item", "");
     }
 
-    // Get the root element!
-    QSqlQuery queryData;
-    queryData.exec("SELECT name,id FROM bookmark_folders WHERE parent_id = '0'");
-
-    if(queryData.next())
-    {
-        QString name = queryData.value(0).toString();
-        int id = queryData.value(1).toInt();
-
-        rootItem = new TreeItem(name, id, ModelUtil::Folder, "Root Item", "");
-        addFolder(rootItem);
-    }
-
-    if(rootItem == NULL)
-    {
-        qDebug() << "DB Corrupted...";
-        exit(2);
-    }
-
-    sqlDb.close();
+    addFolder(rootItem);
 }
 
 void BookmarkModel::addFolder(TreeItem* parent)
 {
-    if(parent == NULL)
+    if(parent == nullptr)
     {
         return;
     }
 
-    QSqlQuery queryData;
-    queryData.prepare("SELECT name,id FROM bookmark_folders WHERE parent_id = :folder_id");
-    queryData.bindValue(":folder_id", parent->getId());
-    queryData.exec();
-
-    while(queryData.next())
+    // Query root folders
+    QVector<DatabaseUtils::FolderData> folders = database.queryFolders(parent->getId());
+    for(DatabaseUtils::FolderData folder : folders)
     {
-        QString name = queryData.value(0).toString();
-        int id = queryData.value(1).toInt();
-
-        TreeItem *item = new TreeItem(name, id, ModelUtil::Folder, "Folder", QString(""), parent);
+        TreeItem *item = new TreeItem(folder.name, folder.id, ModelUtil::Folder, QString("")/*DUMMY LINK*/, QString("")/*DUMMY TAG*/, parent);
         parent->addChild(item);
         addFolder(item);
     }
 
-    // Get the links
-    QSqlQuery queryLinks;
-    queryLinks.prepare("SELECT name,id,url FROM bookmark_links WHERE folder_id = :folder_id");
-    queryLinks.bindValue(":folder_id", parent->getId());
-    if(queryLinks.exec())
+    // Query root folders
+    QVector<DatabaseUtils::LinkData> links = database.queryLinks(parent->getId());
+    for(DatabaseUtils::LinkData link : links)
     {
-        while(queryLinks.next())
-        {
-            QString name = queryLinks.value(0).toString();
-            int id = queryLinks.value(1).toInt();
-            QString url = queryLinks.value(2).toString();
-
-            TreeItem *item = new TreeItem(name, id, ModelUtil::Link, url, QString(""), parent);
-            parent->addChild(item);
-        }
-
+        TreeItem *item = new TreeItem(link.name, link.id, ModelUtil::Link, link.link, link.tags, parent);
+        parent->addChild(item);
     }
-    else
-    {
-        qDebug() << queryLinks.lastError();
-    }
-
-
 }

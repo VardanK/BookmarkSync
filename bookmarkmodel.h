@@ -1,6 +1,8 @@
 #ifndef BOOKMARKMODEL_H
 #define BOOKMARKMODEL_H
 
+#include "sqlitedatabaseadapter.h"
+
 #include <QList>
 #include <QPair>
 #include <QAbstractItemModel>
@@ -96,13 +98,12 @@ public:
     TreeItem* getItem(const QModelIndex &index) const;
 
 protected:
-
-    void initDatabase();
     void fillData();
     void addFolder(TreeItem* parent);
 
 
 protected:
+    SQLiteDatabaseAdapter database;
     TreeItem *rootItem;
 };
 
