@@ -3,7 +3,6 @@
 
 #include <QList>
 #include <QPair>
-#include <QSqlDatabase>
 #include <QAbstractItemModel>
 
 namespace ModelUtil
@@ -104,7 +103,6 @@ protected:
 
 
 protected:
-    QSqlDatabase sqlDb;
     TreeItem *rootItem;
 };
 

@@ -253,7 +253,7 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
     case Qt::EditRole :
         {
             TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
-            if(item != NULL)
+            if(item != NULL && !value.toString().isEmpty())
             {
                 item->setName(value.toString());
             }
@@ -386,12 +386,6 @@ void BookmarkModel::initDatabase()
 {
     sqlDb = QSqlDatabase::addDatabase("QSQLITE");
     sqlDb.setDatabaseName("bookmarks.sqlite");
-
-    if(!sqlDb.open())
-    {
-        qDebug() << sqlDb.lastError();
-        exit(1);
-    }
 
     // Check if tables exist
     QSqlQuery queryTables;

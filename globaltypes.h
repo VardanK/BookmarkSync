@@ -1,12 +1,18 @@
-#ifndef GLOBALTYPES_H
-#define GLOBALTYPES_H
+#pragma once
 
-
-class GlobalTypes
+namespace Utils
 {
-public:
-    GlobalTypes();
-    ~GlobalTypes();
-};
+    struct Link
+    {
+        QString name;
+        QString url;
+        QString tags;
+        int id;
+    };
 
-#endif // GLOBALTYPES_H
+    struct Folder
+    {
+        QString name;
+        int id;
+    };
+}

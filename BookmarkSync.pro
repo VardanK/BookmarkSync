@@ -16,12 +16,15 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     searchlistview.cpp \
     bookmarkmodel.cpp \
-    addnewlink.cpp
+    addnewlink.cpp \
+    sqlitedatabaseadapter.cpp
 
 HEADERS  += mainwindow.h \
     searchlistview.h \
     bookmarkmodel.h \
-    addnewlink.h
+    addnewlink.h \
+    sqlitedatabaseadapter.h \
+    globaltypes.h
 
 FORMS    += mainwindow.ui \
     searchlistview.ui \
