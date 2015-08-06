@@ -1,9 +1,18 @@
 #include "sqlitedatabaseadapter.h"
 
+#include <QMessageBox>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
 #include <QDebug>
+
+#define LOG_QUERY_ERROR(query) \
+    qDebug() << __func__ << ":" << __LINE__ << " " \
+    << query.executedQuery() << " [" << query.lastError().text() << "]";
+
+#define LOG_DATABASE_ERROR(database) \
+    qDebug() << __func__ << ":" << __LINE__ << " " \
+    << database.lastError().text() ;
 
 namespace DatabaseUtils
 {
@@ -26,7 +35,6 @@ namespace DatabaseUtils
         this->id = id;
         this->folderId = folderId;
     }
-
 }
 
 SQLiteDatabaseAdapter::SQLiteDatabaseAdapter() :
@@ -57,16 +65,18 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
-        query.prepare("SELECT id, parent_id, name FROM :tableName "
-                      "WHERE parentId = :parentId");
-        query.bindValue(":tableName", folderTableName);
+        query.prepare(QString(
+                          "SELECT id, name FROM %1 "
+                          "WHERE parent_id = :parentId").
+                      arg(folderTableName));
+
         query.bindValue(":parentId", parentId);
 
         bool r = query.exec();
@@ -76,15 +86,14 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
             while(query.next())
             {
                 qlonglong id = query.value(0).toLongLong();
-                qlonglong parentId = query.value(1).toLongLong();
-                QString name = query.value(2).toString();
+                QString name = query.value(1).toString();
 
                 folders.push_back(DatabaseUtils::FolderData(name, id, parentId));
             }
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -99,16 +108,18 @@ QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong fol
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
-        query.prepare("SELECT id, url, tags, name FROM :tableName "
-                      "WHERE folder_id = :folderId");
-        query.bindValue(":tableName", linksTableName);
+        query.prepare(QString(
+                          "SELECT id, url, tags, name FROM %1 "
+                          "WHERE folder_id = :folderId").
+                      arg(linksTableName));
+
         query.bindValue(":folderId", folderId);
 
         bool r = query.exec();
@@ -127,7 +138,7 @@ QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong fol
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -143,16 +154,18 @@ qlonglong SQLiteDatabaseAdapter::createFolder(const QString &name, qlonglong par
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
-        query.prepare("INSERT INTO :tableName (parent_id, name) "
-                         "VALUES (:parentId, :folderName)");
-        query.bindValue(":tableName", folderTableName);
+        query.prepare(QString(
+                          "INSERT INTO %1 (parent_id, name) "
+                          "VALUES (:parentId, :folderName)").
+                      arg(folderTableName));
+
         query.bindValue(":parentId", parentId);
         query.bindValue(":folderName", name);
 
@@ -166,7 +179,7 @@ qlonglong SQLiteDatabaseAdapter::createFolder(const QString &name, qlonglong par
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -181,17 +194,19 @@ qlonglong SQLiteDatabaseAdapter::moveFolder  (qlonglong folderId, qlonglong newP
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
-        query.prepare("UPDATE :tableName "
-                      "SET parent_id = :newParentId "
-                      "WHERE id = :folderId");
-        query.bindValue(":tableName", folderTableName);
+        query.prepare(QString(
+                          "UPDATE %1 "
+                          "SET parent_id = :newParentId "
+                          "WHERE id = :folderId").
+                      arg(folderTableName));
+
         query.bindValue(":newParentId", newParentId);
         query.bindValue(":folderId", folderId);
 
@@ -203,7 +218,7 @@ qlonglong SQLiteDatabaseAdapter::moveFolder  (qlonglong folderId, qlonglong newP
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -218,17 +233,19 @@ qlonglong SQLiteDatabaseAdapter::renameFolder(qlonglong folderId, const QString 
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
-        query.prepare("UPDATE :tableName "
-                      "SET name = :newName "
-                      "WHERE id = :folderId");
-        query.bindValue(":tableName", folderTableName);
+        query.prepare(QString(
+                          "UPDATE %1 "
+                          "SET name = :newName "
+                          "WHERE id = :folderId").
+                      arg(folderTableName));
+
         query.bindValue(":newName", newName);
         query.bindValue(":folderId", folderId);
 
@@ -240,7 +257,7 @@ qlonglong SQLiteDatabaseAdapter::renameFolder(qlonglong folderId, const QString 
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -256,18 +273,20 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
-        query.prepare("UPDATE :tableName "
-                      "SET name = :newName, "
-                      "SET parent_id = :newParentId "
-                      "WHERE id = :folderId");
-        query.bindValue(":tableName", folderTableName);
+        query.prepare(QString(
+                          "UPDATE %1 "
+                          "SET name = :newName, "
+                          "parent_id = :newParentId "
+                          "WHERE id = :folderId").
+                      arg(folderTableName));
+
         query.bindValue(":newName", newName);
         query.bindValue(":newParentId", newParentId);
         query.bindValue(":folderId", folderId);
@@ -280,7 +299,7 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -295,16 +314,34 @@ qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
+        // Deleting the folder means that you need to recorsevely remove everything that
+        // is under the folder (i.e. folders and links)
+        QVector<DatabaseUtils::FolderData> subFolders = queryFolders(folderId);
+        for(DatabaseUtils::FolderData folder : subFolders)
+        {
+            // Error reporting is done in deleteFolder function
+            deleteFolder(folder.id);
+        }
+
+        QVector<DatabaseUtils::FolderData> links = queryLinks(folderId);
+        for(DatabaseUtils::LinkData link : links)
+        {
+            // Error reporting is done in deleteLink function
+            deleteLink(link.id);
+        }
+
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
-        query.prepare("DELETE FROM :tableName "
-                      "WHERE id = :folderId");
-        query.bindValue(":tableName", folderTableName);
+        query.prepare(QString(
+                        "DELETE FROM %1 "
+                        "WHERE id = :folderId").
+                      arg(folderTableName));
+
         query.bindValue(":folderId", folderId);
 
         bool r = query.exec();
@@ -315,7 +352,7 @@ qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -332,16 +369,18 @@ qlonglong SQLiteDatabaseAdapter::createLink(const QString &name, const QString &
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
-        query.prepare("INSERT INTO :tableName (folder_id, url, tags, name) "
-                         "VALUES (:folderId, :url, :tags, :name)");
-        query.bindValue(":tableName", linksTableName);
+        query.prepare(QString(
+                         "INSERT INTO %1 (folder_id, url, tags, name) "
+                         "VALUES (:folderId, :url, :tags, :name)").
+                      arg(linksTableName));
+
         query.bindValue(":folderId", folderId);
         query.bindValue(":url", url);
         query.bindValue(":tags", tags);
@@ -357,7 +396,7 @@ qlonglong SQLiteDatabaseAdapter::createLink(const QString &name, const QString &
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -372,17 +411,19 @@ qlonglong SQLiteDatabaseAdapter::moveLink  (qlonglong linkId, qlonglong newParen
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
-        query.prepare("UPDATE :tableName "
-                      "SET folder_id = :newParentId "
-                      "WHERE id = :linkId");
-        query.bindValue(":tableName", linksTableName);
+        query.prepare(QString(
+                        "UPDATE %1 "
+                        "SET folder_id = :newParentId "
+                        "WHERE id = :linkId").
+                      arg(linksTableName));
+
         query.bindValue(":newParentId", newParentId);
         query.bindValue(":linkId", linkId);
 
@@ -394,7 +435,7 @@ qlonglong SQLiteDatabaseAdapter::moveLink  (qlonglong linkId, qlonglong newParen
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -409,17 +450,19 @@ qlonglong SQLiteDatabaseAdapter::renameLink(qlonglong linkId, const QString &new
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
-        query.prepare("UPDATE :tableName "
-                      "SET name = :newName "
-                      "WHERE id = :linkId");
-        query.bindValue(":tableName", linksTableName);
+        query.prepare(QString(
+                          "UPDATE %1 "
+                          "SET name = :newName "
+                          "WHERE id = :linkId").
+                      arg(linksTableName));
+
         query.bindValue(":newName", newLinkName);
         query.bindValue(":linkId", linkId);
 
@@ -431,7 +474,7 @@ qlonglong SQLiteDatabaseAdapter::renameLink(qlonglong linkId, const QString &new
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -448,20 +491,22 @@ qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &new
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
-        query.prepare("UPDATE :tableName "
-                      "SET folder_id = :newFolderId, "
-                      "url = :url, "
-                      "tags = :tags, "
-                      "name = :newName "
-                      "WHERE id = :linkId");
-        query.bindValue(":tableName", linksTableName);
+        query.prepare(QString(
+                          "UPDATE %1 "
+                          "SET folder_id = :newFolderId, "
+                          "url = :url, "
+                          "tags = :tags, "
+                          "name = :newName "
+                          "WHERE id = :linkId").
+                      arg(linksTableName));
+
         query.bindValue(":newFolderId", folderId);
         query.bindValue(":url", url);
         query.bindValue(":tags", tags);
@@ -476,7 +521,7 @@ qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &new
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -491,16 +536,18 @@ qlonglong SQLiteDatabaseAdapter::deleteLink(qlonglong linkId)
 
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
     }
     else
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
-        query.prepare("DELETE FROM :tableName "
-                      "WHERE id = :linkId");
-        query.bindValue(":tableName", linksTableName);
+        query.prepare(QString(
+                          "DELETE FROM %1 "
+                          "WHERE id = :linkId").
+                      arg(linksTableName));
+
         query.bindValue(":linkId", linkId);
 
         bool r = query.exec();
@@ -511,7 +558,7 @@ qlonglong SQLiteDatabaseAdapter::deleteLink(qlonglong linkId)
         }
         else
         {
-            qDebug() << query.lastError();
+            LOG_QUERY_ERROR(query);
         }
     }
 
@@ -524,7 +571,7 @@ void SQLiteDatabaseAdapter::initDatabase()
 {
     if(!sqlDb.open())
     {
-        qDebug() << sqlDb.lastError();
+        LOG_DATABASE_ERROR(sqlDb);
         exit(1);
     }
 
@@ -536,56 +583,75 @@ void SQLiteDatabaseAdapter::initDatabase()
     queryTables.prepare("SELECT name FROM sqlite_master WHERE type='table' AND "
                         "name = :tableName;");
     queryTables.bindValue(":tableName", folderTableName);
+
     isOk = queryTables.exec();
+
     if(isOk && !queryTables.next())
     {
+        // Table does not exist, create it!
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery queryCreate;
-        queryCreate.prepare("CREATE TABLE :tableName ("
-                         "id INTEGER PRIMARY KEY, "
-                         "parent_id INTEGER, "
-                         "name TEXT"
-                         ");");
-        queryCreate.bindValue(":tableName", folderTableName);
+        isOk =  queryCreate.exec(QString(
+                                 "CREATE TABLE %1 ("
+                                 "id INTEGER PRIMARY KEY, "
+                                 "parent_id INTEGER, "
+                                 "name TEXT"
+                                 ");").arg(folderTableName));
 
-        isOk = queryCreate.exec();
-        createDefaultFolders = true;
+        if(!isOk)
+        {
+            LOG_QUERY_ERROR(queryCreate);
+        }
+        else
+        {
+            createDefaultFolders = true;
+        }
     }
-
-    if(isOk)
+    else if(!isOk)
     {
-        queryTables.prepare("SELECT name FROM sqlite_master WHERE type='table' AND "
-                            "name = :tableName;");
-        queryTables.bindValue(":tableName", linksTableName);
-        isOk = queryTables.exec();
+        LOG_QUERY_ERROR(queryTables);
     }
+
+
+    queryTables.prepare("SELECT name FROM sqlite_master WHERE type='table' AND "
+                        "name = :tableName;");
+    queryTables.bindValue(":tableName", linksTableName);
+
+    isOk = queryTables.exec();
 
     if(isOk && !queryTables.next())
     {
+        // Table does not exist, create it!
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery queryCreate;
-        queryCreate.prepare("CREATE TABLE :tableName ("
-                         "id INTEGER PRIMARY KEY, "
-                         "folder_id INTEGER, "
-                         "url TEXT, "
-                         "tags TEXT, "
-                         "name TEXT"
-                         ");");
+        isOk =  queryCreate.exec(QString(
+                                 "CREATE TABLE %1("
+                                 "id INTEGER PRIMARY KEY, "
+                                 "folder_id INTEGER, "
+                                 "url TEXT, "
+                                 "tags TEXT, "
+                                 "name TEXT"
+                                 ");").arg(linksTableName));
 
-        queryCreate.bindValue(":tableName", linksTableName);
-
-        isOk = queryCreate.exec();
+        if(!isOk)
+        {
+            LOG_QUERY_ERROR(queryCreate);
+        }
     }
-
-    if(!isOk)
+    else if(!isOk)
     {
-        qDebug() << sqlDb.lastError();
-        exit(1);
+        LOG_QUERY_ERROR(queryTables);
     }
 
     sqlDb.close();
+
+    if(!isOk)
+    {
+        QMessageBox::critical(nullptr, "Database Error", "Cannot open/create database, please contact software owner to resolve the issue");
+        exit(1);
+    }
 
     if(createDefaultFolders)
     {

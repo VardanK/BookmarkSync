@@ -1,4 +1,5 @@
 #include "bookmarkmodel.h"
+#include "testdatabase.h"
 
 #include <QSqlQuery>
 #include <QSqlError>
@@ -170,6 +171,8 @@ BookmarkModel::BookmarkModel(QObject *parent) : QAbstractItemModel(parent)
 {
     rootItem = nullptr;
     fillData();
+
+    TestDatabase(&database).testBegin();
 }
 
 BookmarkModel::~BookmarkModel()
