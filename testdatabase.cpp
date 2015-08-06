@@ -169,11 +169,20 @@ void TestDatabase::testMoveFolder()
     TEST_END
 }
 
-void TestDatabase::testCreateLink(){}
-void TestDatabase::testRenameLink(){}
-void TestDatabase::testDeleteLink(){}
-void TestDatabase::testMoveLink(){}
-void TestDatabase::testUpdateLink(){}
+void TestDatabase::testCreateLink()
+{}
+
+void TestDatabase::testRenameLink()
+{}
+
+void TestDatabase::testDeleteLink()
+{}
+
+void TestDatabase::testMoveLink()
+{}
+
+void TestDatabase::testUpdateLink()
+{}
 
 void TestDatabase::cleanup()
 {

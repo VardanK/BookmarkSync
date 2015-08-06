@@ -59,7 +59,7 @@ SQLiteDatabaseAdapter::~SQLiteDatabaseAdapter()
 }
 
 // Generic data query functions
-QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong parentId)
+QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong parentId, const QString &filter)
 {
     QVector<DatabaseUtils::FolderData> folders;
 
@@ -74,8 +74,10 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
         QSqlQuery query;
         query.prepare(QString(
                           "SELECT id, name FROM %1 "
-                          "WHERE parent_id = :parentId").
-                      arg(folderTableName));
+                          "WHERE parent_id = :parentId %2").
+                      arg(folderTableName).
+                      arg(filter.isEmpty() ? "" : QString("AND %1").arg(filter) )
+                      );
 
         query.bindValue(":parentId", parentId);
 
@@ -102,7 +104,7 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
     return folders;
 }
 
-QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong folderId)
+QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong folderId, const QString &filter)
 {
     QVector<DatabaseUtils::LinkData> links;
 
@@ -117,8 +119,10 @@ QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong fol
         QSqlQuery query;
         query.prepare(QString(
                           "SELECT id, url, tags, name FROM %1 "
-                          "WHERE folder_id = :folderId").
-                      arg(linksTableName));
+                          "WHERE folder_id = :folderId%2").
+                      arg(linksTableName).
+                      arg(filter.isEmpty() ? "" : QString("AND %1").arg(filter) )
+                      );
 
         query.bindValue(":folderId", folderId);
 

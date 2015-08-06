@@ -43,8 +43,8 @@ public:
 
 public:
     // Generic data query functions
-    QVector<DatabaseUtils::FolderData> queryFolders(qlonglong parentId); // if parentId == will return all top level folders
-    QVector<DatabaseUtils::LinkData> queryLinks(qlonglong folderId);
+    QVector<DatabaseUtils::FolderData> queryFolders(qlonglong parentId, const QString &filter = QString("")); // if parentId == will return all top level folders
+    QVector<DatabaseUtils::LinkData> queryLinks(qlonglong folderId, const QString &filter = QString(""));
 
     // Folder manipulation interface
     qlonglong createFolder(const QString &name, qlonglong parentId); // -1 indicates error, othervise return created folder id
