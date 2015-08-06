@@ -27,6 +27,8 @@ private:
     void testMoveLink();
     void testUpdateLink();
 
+    void cleanup();
+
 private:
     SQLiteDatabaseAdapter *dbAdapter;
 

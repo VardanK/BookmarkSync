@@ -310,6 +310,22 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
 
 qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
 {
+    // Deleting the folder means that you need to recorsevely remove everything that
+    // is under the folder (i.e. folders and links)
+    QVector<DatabaseUtils::FolderData> subFolders = queryFolders(folderId);
+    for(DatabaseUtils::FolderData folder : subFolders)
+    {
+        // Error reporting is done in deleteFolder function
+        deleteFolder(folder.id);
+    }
+
+    QVector<DatabaseUtils::LinkData> links = queryLinks(folderId);
+    for(DatabaseUtils::LinkData link : links)
+    {
+        // Error reporting is done in deleteLink function
+        deleteLink(link.id);
+    }
+
     qlonglong retVal = -1;
 
     if(!sqlDb.open())
@@ -318,22 +334,6 @@ qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
     }
     else
     {
-        // Deleting the folder means that you need to recorsevely remove everything that
-        // is under the folder (i.e. folders and links)
-        QVector<DatabaseUtils::FolderData> subFolders = queryFolders(folderId);
-        for(DatabaseUtils::FolderData folder : subFolders)
-        {
-            // Error reporting is done in deleteFolder function
-            deleteFolder(folder.id);
-        }
-
-        QVector<DatabaseUtils::FolderData> links = queryLinks(folderId);
-        for(DatabaseUtils::LinkData link : links)
-        {
-            // Error reporting is done in deleteLink function
-            deleteLink(link.id);
-        }
-
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
         QSqlQuery query;
@@ -596,7 +596,7 @@ void SQLiteDatabaseAdapter::initDatabase()
                                  "CREATE TABLE %1 ("
                                  "id INTEGER PRIMARY KEY, "
                                  "parent_id INTEGER, "
-                                 "name TEXT"
+                                 "name TEXT UNIQUE"
                                  ");").arg(folderTableName));
 
         if(!isOk)
@@ -630,9 +630,9 @@ void SQLiteDatabaseAdapter::initDatabase()
                                  "CREATE TABLE %1("
                                  "id INTEGER PRIMARY KEY, "
                                  "folder_id INTEGER, "
-                                 "url TEXT, "
+                                 "url TEXT UNIQUE, "
                                  "tags TEXT, "
-                                 "name TEXT"
+                                 "name TEXT UNIQUE"
                                  ");").arg(linksTableName));
 
         if(!isOk)
