@@ -97,6 +97,17 @@ public:
 
     TreeItem* getItem(const QModelIndex &index) const;
 
+private slots:
+    void onFolderCreated(int folderId, int parentId);
+    void onFolderMoved  (int folderId, int oldParent, int newParent);
+    void onFolderUpdated(int folderId);
+    void onFolderDeleted(int folderId, int parentId);
+
+    void onLinkCreated(int linkId, int folderId);
+    void onLinkMoved  (int linkId, int oldFolderId, int newFolderId);
+    void onLinkUpdated(int linkId);
+    void onLinkDeleted(int linkId, int folderId);
+
 protected:
     void fillData();
     void addFolder(TreeItem* parent);

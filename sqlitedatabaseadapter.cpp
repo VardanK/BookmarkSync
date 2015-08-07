@@ -37,7 +37,8 @@ namespace DatabaseUtils
     }
 }
 
-SQLiteDatabaseAdapter::SQLiteDatabaseAdapter() :
+SQLiteDatabaseAdapter::SQLiteDatabaseAdapter(QObject *parent) :
+    QObject(parent),
     databaseType("QSQLITE"),
     databaseName("bookmarks.sqlite"),
     folderTableName("bookmark_folders"),
@@ -74,9 +75,9 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
         QSqlQuery query;
         query.prepare(QString(
                           "SELECT id, name FROM %1 "
-                          "WHERE parent_id = :parentId %2").
+                          "WHERE parent_id = :parentId%2").
                       arg(folderTableName).
-                      arg(filter.isEmpty() ? "" : QString("AND %1").arg(filter) )
+                      arg(filter.isEmpty() ? "" : QString(" AND name LIKE '%%1%'").arg(filter) )
                       );
 
         query.bindValue(":parentId", parentId);
@@ -121,7 +122,7 @@ QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong fol
                           "SELECT id, url, tags, name FROM %1 "
                           "WHERE folder_id = :folderId%2").
                       arg(linksTableName).
-                      arg(filter.isEmpty() ? "" : QString("AND %1").arg(filter) )
+                      arg(filter.isEmpty() ? "" : QString(" AND name LIKE '%%1%'").arg(filter) )
                       );
 
         query.bindValue(":folderId", folderId);
@@ -179,7 +180,10 @@ qlonglong SQLiteDatabaseAdapter::createFolder(const QString &name, qlonglong par
         {
             QVariant lastInsert = query.lastInsertId();
             if(lastInsert.isValid())
+            {
                 retVal = lastInsert.toLongLong();
+                Q_EMIT folderCreated(retVal, parentId);
+            }
         }
         else
         {
@@ -196,11 +200,13 @@ qlonglong SQLiteDatabaseAdapter::moveFolder  (qlonglong folderId, qlonglong newP
 {
     qlonglong retVal = -1;
 
+    qlonglong oldParentId = getFolderParent(folderId);
+
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(oldParentId != -1)
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
@@ -219,6 +225,7 @@ qlonglong SQLiteDatabaseAdapter::moveFolder  (qlonglong folderId, qlonglong newP
         if(r)
         {
             retVal = folderId;
+            Q_EMIT folderMoved(retVal, oldParentId, newParentId);
         }
         else
         {
@@ -235,11 +242,13 @@ qlonglong SQLiteDatabaseAdapter::renameFolder(qlonglong folderId, const QString 
 {
     qlonglong retVal = -1;
 
+    qlonglong parentId = getFolderParent(folderId);
+
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(parentId != -1)
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
@@ -258,6 +267,7 @@ qlonglong SQLiteDatabaseAdapter::renameFolder(qlonglong folderId, const QString 
         if(r)
         {
             retVal = folderId;
+            Q_EMIT folderUpdated(retVal);
         }
         else
         {
@@ -275,11 +285,13 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
 {
     qlonglong retVal = -1;
 
+    qlonglong oldParentId = getFolderParent(folderId);
+
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(oldParentId != -1)
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
@@ -300,6 +312,11 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
         if(r)
         {
             retVal = folderId;
+
+            if(oldParentId != newParentId)
+                Q_EMIT folderMoved(retVal, oldParentId, newParentId);
+            else
+                Q_EMIT folderUpdated(retVal);
         }
         else
         {
@@ -314,6 +331,8 @@ qlonglong SQLiteDatabaseAdapter::updateFolder(qlonglong folderId, const QString 
 
 qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
 {
+    static int recursionCounter = 0;
+    ++recursionCounter;
     // Deleting the folder means that you need to recorsevely remove everything that
     // is under the folder (i.e. folders and links)
     QVector<DatabaseUtils::FolderData> subFolders = queryFolders(folderId);
@@ -331,12 +350,13 @@ qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
     }
 
     qlonglong retVal = -1;
+    qlonglong parentId = getFolderParent(folderId);
 
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(parentId != -1)
     {
         // FOLDERS TABLE STRUCTURE
         // [id, parent_id, name]
@@ -353,6 +373,47 @@ qlonglong SQLiteDatabaseAdapter::deleteFolder(qlonglong folderId)
         if(r)
         {
             retVal = folderId;
+            if(recursionCounter == 1)
+                Q_EMIT folderDeleted(retVal, parentId);
+        }
+        else
+        {
+            LOG_QUERY_ERROR(query);
+        }
+    }
+
+    sqlDb.close();
+
+    --recursionCounter;
+
+    return retVal;
+}
+
+qlonglong SQLiteDatabaseAdapter::getFolderParent(qlonglong folderId)
+{
+    qlonglong retVal = -1;
+
+    if(!sqlDb.open())
+    {
+        LOG_DATABASE_ERROR(sqlDb);
+    }
+    else
+    {
+        // FOLDERS TABLE STRUCTURE
+        // [id, parent_id, name]
+        QSqlQuery query;
+        query.prepare(QString(
+                          "SELECT parent_id FROM %1 "
+                          "WHERE id = :folderId").
+                      arg(folderTableName));
+
+        query.bindValue(":folderId", folderId);
+
+        bool r = query.exec();
+
+        if(r && query.next())
+        {
+            retVal = query.value(0).toLongLong();
         }
         else
         {
@@ -396,7 +457,10 @@ qlonglong SQLiteDatabaseAdapter::createLink(const QString &name, const QString &
         {
             QVariant lastInsert = query.lastInsertId();
             if(lastInsert.isValid())
+            {
                 retVal = lastInsert.toLongLong();
+                Q_EMIT linkCreated(retVal, folderId);
+            }
         }
         else
         {
@@ -409,26 +473,27 @@ qlonglong SQLiteDatabaseAdapter::createLink(const QString &name, const QString &
     return retVal;
 }
 
-qlonglong SQLiteDatabaseAdapter::moveLink  (qlonglong linkId, qlonglong newParentId)
+qlonglong SQLiteDatabaseAdapter::moveLink  (qlonglong linkId, qlonglong newFolderId)
 {
     qlonglong retVal = -1;
+    qlonglong oldFolderId = getLinkFolder(linkId);
 
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(oldFolderId != -1)
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
         QSqlQuery query;
         query.prepare(QString(
                         "UPDATE %1 "
-                        "SET folder_id = :newParentId "
+                        "SET folder_id = :newFolderId "
                         "WHERE id = :linkId").
                       arg(linksTableName));
 
-        query.bindValue(":newParentId", newParentId);
+        query.bindValue(":newFolderId", newFolderId);
         query.bindValue(":linkId", linkId);
 
         bool r = query.exec();
@@ -436,6 +501,7 @@ qlonglong SQLiteDatabaseAdapter::moveLink  (qlonglong linkId, qlonglong newParen
         if(r)
         {
             retVal = linkId;
+            Q_EMIT linkMoved(retVal, oldFolderId, newFolderId);
         }
         else
         {
@@ -475,6 +541,7 @@ qlonglong SQLiteDatabaseAdapter::renameLink(qlonglong linkId, const QString &new
         if(r)
         {
             retVal = linkId;
+            Q_EMIT linkUpdated(retVal);
         }
         else
         {
@@ -489,15 +556,16 @@ qlonglong SQLiteDatabaseAdapter::renameLink(qlonglong linkId, const QString &new
 
 qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &newName,
                                             const QString &url, const QString &tags,
-                                            qlonglong folderId)
+                                            qlonglong newFolderId)
 {
     qlonglong retVal = -1;
+    qlonglong oldFolderId = getLinkFolder(linkId);
 
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(oldFolderId != -1)
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
@@ -511,7 +579,7 @@ qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &new
                           "WHERE id = :linkId").
                       arg(linksTableName));
 
-        query.bindValue(":newFolderId", folderId);
+        query.bindValue(":newFolderId", newFolderId);
         query.bindValue(":url", url);
         query.bindValue(":tags", tags);
         query.bindValue(":newName", newName);
@@ -522,6 +590,8 @@ qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &new
         if(r)
         {
             retVal = linkId;
+            if(oldFolderId != newFolderId)
+                Q_EMIT linkMoved(retVal, oldFolderId, newFolderId);
         }
         else
         {
@@ -537,12 +607,13 @@ qlonglong SQLiteDatabaseAdapter::updateLink(qlonglong linkId, const QString &new
 qlonglong SQLiteDatabaseAdapter::deleteLink(qlonglong linkId)
 {
     qlonglong retVal = -1;
+    qlonglong folderId = getLinkFolder(linkId);
 
     if(!sqlDb.open())
     {
         LOG_DATABASE_ERROR(sqlDb);
     }
-    else
+    else if(folderId != -1)
     {
         // LINKS TABLE STRUCTURE
         // [id, folder_id, url, tags, name]
@@ -559,6 +630,44 @@ qlonglong SQLiteDatabaseAdapter::deleteLink(qlonglong linkId)
         if(r)
         {
             retVal = linkId;
+            Q_EMIT linkDeleted(linkId, folderId);
+        }
+        else
+        {
+            LOG_QUERY_ERROR(query);
+        }
+    }
+
+    sqlDb.close();
+
+    return retVal;
+}
+
+qlonglong SQLiteDatabaseAdapter::getLinkFolder(qlonglong linkId)
+{
+    qlonglong retVal = -1;
+
+    if(!sqlDb.open())
+    {
+        LOG_DATABASE_ERROR(sqlDb);
+    }
+    else
+    {
+        // LINKS TABLE STRUCTURE
+        // [id, folder_id, url, tags, name]
+        QSqlQuery query;
+        query.prepare(QString(
+                          "SELECT folder_id FROM %1 "
+                          "WHERE id = :linkId").
+                      arg(linksTableName));
+
+        query.bindValue(":linkId", linkId);
+
+        bool r = query.exec();
+
+        if(r && query.next())
+        {
+            retVal = query.value(0).toLongLong();
         }
         else
         {

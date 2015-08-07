@@ -3,6 +3,7 @@
 
 #include <QSqlDatabase>
 #include <QVector>
+#include <QObject>
 
 namespace DatabaseUtils
 {
@@ -35,11 +36,24 @@ namespace DatabaseUtils
     };
 }
 
-class SQLiteDatabaseAdapter
+class SQLiteDatabaseAdapter : public QObject
 {
+    Q_OBJECT
 public:
-    SQLiteDatabaseAdapter();
+    SQLiteDatabaseAdapter(QObject *parent = 0);
     ~SQLiteDatabaseAdapter();
+
+signals:
+    void folderCreated(int folderId, int parentId);
+    void folderMoved  (int folderId, int oldParent, int newParent);
+    void folderUpdated(int folderId);
+    void folderDeleted(int folderId, int parentId);
+
+    void linkCreated(int linkId, int folderId);
+    void linkMoved  (int linkId, int oldFolderId, int newFolderId);
+    void linkUpdated(int linkId);
+    void linkDeleted(int linkId, int folderId);
+
 
 public:
     // Generic data query functions
@@ -52,6 +66,7 @@ public:
     qlonglong renameFolder(qlonglong folderId, const QString &newName);
     qlonglong updateFolder(qlonglong folderId, const QString &newName, qlonglong newParentId);
     qlonglong deleteFolder(qlonglong folderId);
+    qlonglong getFolderParent(qlonglong folderId);
 
     // URL manipulation interface
     qlonglong createLink(const QString &name, const QString &url, const QString &tags, qlonglong folderId);
@@ -59,6 +74,7 @@ public:
     qlonglong renameLink(qlonglong linkId, const QString &name);
     qlonglong updateLink(qlonglong linkId, const QString &name, const QString &url, const QString &tags, qlonglong folderId);
     qlonglong deleteLink(qlonglong linkId);
+    qlonglong getLinkFolder(qlonglong folderId);
 
 private:
     // Utility functions

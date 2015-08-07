@@ -6,6 +6,8 @@
 #include <QDebug>
 #include <QIcon>
 
+//#define DB_TEST_ENABLED
+
 BookmarkItem::BookmarkItem(const BookmarkItem& item):
     BookmarkItem(item.name, item.url, item.tags, item.id, item.type)
 {
@@ -170,9 +172,34 @@ TreeItem* TreeItem::getParent()
 BookmarkModel::BookmarkModel(QObject *parent) : QAbstractItemModel(parent)
 {
     rootItem = nullptr;
+#ifdef DB_TEST_ENABLED
+    TestDatabase(&database).testBegin();
+#endif
     fillData();
 
-    TestDatabase(&database).testBegin();
+    connect(&database, &SQLiteDatabaseAdapter::folderCreated,
+            this,      &BookmarkModel::onFolderCreated);
+
+    connect(&database, &SQLiteDatabaseAdapter::folderDeleted,
+            this,      &BookmarkModel::onFolderDeleted);
+
+    connect(&database, &SQLiteDatabaseAdapter::folderMoved,
+            this,      &BookmarkModel::onFolderMoved);
+
+    connect(&database, &SQLiteDatabaseAdapter::folderUpdated,
+            this,      &BookmarkModel::onFolderUpdated);
+
+    connect(&database, &SQLiteDatabaseAdapter::linkCreated,
+            this,      &BookmarkModel::onLinkCreated);
+
+    connect(&database, &SQLiteDatabaseAdapter::linkDeleted,
+            this,      &BookmarkModel::onLinkDeleted);
+
+    connect(&database, &SQLiteDatabaseAdapter::linkMoved,
+            this,      &BookmarkModel::onLinkMoved);
+
+    connect(&database, &SQLiteDatabaseAdapter::linkUpdated,
+            this,      &BookmarkModel::onLinkUpdated);
 }
 
 BookmarkModel::~BookmarkModel()
@@ -381,6 +408,38 @@ TreeItem* BookmarkModel::getItem(const QModelIndex &index) const
     }
 
     return rootItem;
+}
+
+void BookmarkModel::onFolderCreated(int folderId, int parentId)
+{
+}
+
+void BookmarkModel::onFolderMoved  (int folderId, int oldParent, int newParent)
+{
+}
+
+void BookmarkModel::onFolderUpdated(int folderId)
+{
+}
+
+void BookmarkModel::onFolderDeleted(int folderId, int parentId)
+{
+}
+
+void BookmarkModel::onLinkCreated(int linkId, int folderId)
+{
+}
+
+void BookmarkModel::onLinkMoved  (int linkId, int oldFolderId, int newFolderId)
+{
+}
+
+void BookmarkModel::onLinkUpdated(int linkId)
+{
+}
+
+void BookmarkModel::onLinkDeleted(int linkId, int folderId)
+{
 }
 
 void BookmarkModel::fillData()

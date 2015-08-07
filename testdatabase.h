@@ -4,6 +4,10 @@
 #include <QVector>
 
 class SQLiteDatabaseAdapter;
+namespace DatabaseUtils
+{
+    class FolderData;
+}
 
 class TestDatabase
 {
@@ -32,8 +36,7 @@ private:
 private:
     SQLiteDatabaseAdapter *dbAdapter;
 
-    QVector<qlonglong> folders;
-    QVector<qlonglong> links;
+    QVector<DatabaseUtils::FolderData> rootFolders;
 };
 
 #endif // TESTDATABASE_H
