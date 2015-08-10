@@ -8,6 +8,11 @@
 #define TEST_START \
     qDebug() << __func__ << " started";
 
+#define COMPARE_STR(actual, expected) \
+    if(actual.compare(expected) != 0) \
+        qDebug() << __LINE__ << " comparision failed, expected " << expected \
+        << ", got " << actual;
+
 #define COMPARE(actual, expected) \
     if(actual != expected) \
         qDebug() << __LINE__ << " comparision failed, expected " << expected \
@@ -15,7 +20,7 @@
 
 #define COMPARE_NQ(actual, expected) \
     if(actual == expected) \
-        qDebug() << __LINE__ << " comparision failed, expected " << expected \
+        qDebug() << __LINE__ << " comparision failed, not expected " << expected \
         << ", got " << actual;
 
 #define COMPARE_DIFF(arg1, arg2, diff) \
@@ -48,13 +53,19 @@ TestDatabase::~TestDatabase()
 
 void TestDatabase::testBegin()
 {
-    //cleanup();
+    cleanup();
 
     testCreateFolder();
     testRenameFolder();
     testDeleteFolder();
     testUpdateFolder();
     testMoveFolder();
+
+    testCreateLink();
+    testRenameLink();
+    testDeleteLink();
+    testUpdateLink();
+    testMoveLink();
 
     cleanup();
 }
@@ -132,7 +143,6 @@ void TestDatabase::testUpdateFolder()
 
     QVector<DatabaseUtils::FolderData> rootFoldersOld = dbAdapter->queryFolders(0, "Test_");
 
-
     // Rename root folder 2 and make it subfolder for 1
     qlonglong root2 = dbAdapter->updateFolder(rootFolders.at(1).id, "Test_Root2", rootFolders.at(0).id);
     COMPARE(root2, rootFolders.at(1).id)
@@ -170,19 +180,125 @@ void TestDatabase::testMoveFolder()
 }
 
 void TestDatabase::testCreateLink()
-{}
+{
+    TEST_START
+
+    qlonglong folderId = rootFolders.at(0).id;
+    qlonglong folderId2 = dbAdapter->queryFolders(folderId).at(0).id;
+
+    int numLinksBefore = dbAdapter->queryLinks(folderId).size();
+
+    qlonglong linkId1 = dbAdapter->createLink("Link 1", "http://link1.com", "", folderId);
+    qlonglong linkId2 = dbAdapter->createLink("Link 2", "http://link2.com", "", folderId);
+    qlonglong linkId3 = dbAdapter->createLink("Link 3", "http://link3.com", "", folderId);
+    qlonglong linkId3_d = dbAdapter->createLink("Link 3_d", "http://link3.com", "", folderId);
+
+    int numLinksAfter = dbAdapter->queryLinks(folderId).size();
+
+    COMPARE_NQ(linkId1, -1);
+    COMPARE_NQ(linkId2, -1);
+    COMPARE_NQ(linkId3, -1);
+    COMPARE_NQ(linkId3_d, -1);
+
+    COMPARE_DIFF(numLinksAfter, numLinksBefore, 4);
+
+    numLinksBefore = dbAdapter->queryLinks(folderId2).size();
+
+    qlonglong linkId2_1 = dbAdapter->createLink("Link 1", "http://link1.com", "", folderId2);
+    qlonglong linkId2_2 = dbAdapter->createLink("Link 2", "http://link2.com", "", folderId2);
+    qlonglong linkId2_3 = dbAdapter->createLink("Link 3", "http://link3.com", "", folderId2);
+    qlonglong linkId2_3_d = dbAdapter->createLink("Link 3_d", "http://link3.com", "", folderId2);
+    qlonglong linkId2_4 = dbAdapter->createLink("Link 4", "http://link4.com", "", folderId2);
+
+    numLinksAfter = dbAdapter->queryLinks(folderId2).size();
+
+    COMPARE_NQ(linkId2_1, -1);
+    COMPARE_NQ(linkId2_2, -1);
+    COMPARE_NQ(linkId2_3, -1);
+    COMPARE_NQ(linkId2_3_d, -1);
+    COMPARE_NQ(linkId2_4, -1);
+
+    COMPARE_DIFF(numLinksAfter, numLinksBefore, 5);
+
+    TEST_END
+}
 
 void TestDatabase::testRenameLink()
-{}
+{
+    TEST_START
+
+    qlonglong folderId = rootFolders.at(0).id;
+    QVector<DatabaseUtils::LinkData> links = dbAdapter->queryLinks(folderId);
+    COMPARE_NQ(links.size(), 0)
+
+    QString newName = "Link 1 (Renamed)";
+    qlonglong linkId1 = dbAdapter->renameLink(links.at(0).id, newName);
+    COMPARE(linkId1, links.at(0).id);
+
+    COMPARE_STR(newName, dbAdapter->queryLink(links.at(0).id).name);
+
+    TEST_END
+}
 
 void TestDatabase::testDeleteLink()
-{}
+{
+    TEST_START
+
+    qlonglong folderId = rootFolders.at(0).id;
+    qlonglong folderId2 = dbAdapter->queryFolders(folderId).at(0).id;
+
+    QVector<DatabaseUtils::LinkData> linksBefore = dbAdapter->queryLinks(folderId2);
+    dbAdapter->deleteLink(linksBefore.last().id);
+    QVector<DatabaseUtils::LinkData> linksAfter = dbAdapter->queryLinks(folderId2);
+
+    COMPARE_DIFF(linksBefore.size(), linksAfter.size(), 1);
+
+    TEST_END
+}
 
 void TestDatabase::testMoveLink()
-{}
+{
+    TEST_START
+
+    qlonglong folderId = rootFolders.at(0).id;
+    qlonglong folderId1 = dbAdapter->queryFolders(folderId).at(0).id;
+    qlonglong folderId2 = dbAdapter->queryFolders(folderId).at(1).id;
+
+    QVector<DatabaseUtils::LinkData> links1Before = dbAdapter->queryLinks(folderId1);
+    QVector<DatabaseUtils::LinkData> links2Before = dbAdapter->queryLinks(folderId2);
+    dbAdapter->moveLink(links1Before.last().id, folderId2);
+    dbAdapter->moveLink(links1Before.first().id, folderId2);
+    QVector<DatabaseUtils::LinkData> links1After = dbAdapter->queryLinks(folderId1);
+    QVector<DatabaseUtils::LinkData> links2After = dbAdapter->queryLinks(folderId2);
+
+    COMPARE_DIFF(links1Before.size(), links1After.size(), 2);
+    COMPARE_DIFF(links2After.size(), links2Before.size(), 2);
+
+    TEST_END
+}
 
 void TestDatabase::testUpdateLink()
-{}
+{
+    TEST_START
+
+    qlonglong folderId = rootFolders.at(0).id;
+    qlonglong folderId1 = dbAdapter->queryFolders(folderId).at(0).id;
+    qlonglong folderId2 = dbAdapter->queryFolders(folderId).at(1).id;
+
+    QVector<DatabaseUtils::LinkData> links1Before = dbAdapter->queryLinks(folderId1);
+    QVector<DatabaseUtils::LinkData> links2Before = dbAdapter->queryLinks(folderId2);
+
+    dbAdapter->updateLink(links1Before.first().id, "Updated Link(1)", "ftp://link_1_upd.org", "TAGS", folderId1);
+    dbAdapter->updateLink(links1Before.last().id, "Updated Link(2)", "ftp://link_2_upd.net", "Multiple TAGs", folderId2);
+
+    QVector<DatabaseUtils::LinkData> links1After = dbAdapter->queryLinks(folderId1);
+    QVector<DatabaseUtils::LinkData> links2After = dbAdapter->queryLinks(folderId2);
+
+    COMPARE_DIFF(links1Before.size(), links1After.size(), 1);
+    COMPARE_DIFF(links2After.size(), links2Before.size(), 1);
+
+    TEST_END
+}
 
 void TestDatabase::cleanup()
 {

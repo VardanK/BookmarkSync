@@ -105,6 +105,50 @@ QVector<DatabaseUtils::FolderData> SQLiteDatabaseAdapter::queryFolders(qlonglong
     return folders;
 }
 
+DatabaseUtils::FolderData SQLiteDatabaseAdapter::queryFolder(qlonglong folderId)
+{
+    DatabaseUtils::FolderData folder;
+
+    if(!sqlDb.open())
+    {
+        LOG_DATABASE_ERROR(sqlDb);
+    }
+    else
+    {
+        // FOLDERS TABLE STRUCTURE
+        // [id, parent_id, name]
+        QSqlQuery query;
+        query.prepare(QString(
+                          "SELECT parent_id, name FROM %1 "
+                          "WHERE id = :folderId").
+                      arg(folderTableName)
+                      );
+
+        query.bindValue(":folderId", folderId);
+
+        bool r = query.exec();
+
+        if(r)
+        {
+            if(query.next())
+            {
+                qlonglong parentId = query.value(0).toLongLong();
+                QString name = query.value(1).toString();
+
+                folder = DatabaseUtils::FolderData(name, folderId, parentId);
+            }
+        }
+        else
+        {
+            LOG_QUERY_ERROR(query);
+        }
+    }
+
+    sqlDb.close();
+
+    return folder;
+}
+
 QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong folderId, const QString &filter)
 {
     QVector<DatabaseUtils::LinkData> links;
@@ -150,6 +194,51 @@ QVector<DatabaseUtils::LinkData> SQLiteDatabaseAdapter::queryLinks(qlonglong fol
     sqlDb.close();
 
     return links;
+}
+
+DatabaseUtils::LinkData SQLiteDatabaseAdapter::queryLink(qlonglong linkId)
+{
+    DatabaseUtils::LinkData link;
+
+    if(!sqlDb.open())
+    {
+        LOG_DATABASE_ERROR(sqlDb);
+    }
+    else
+    {
+        // LINKS TABLE STRUCTURE
+        // [id, folder_id, url, tags, name]
+        QSqlQuery query;
+        query.prepare(QString(
+                          "SELECT folder_id, url, tags, name FROM %1 "
+                          "WHERE id = :id").
+                      arg(linksTableName));
+
+        query.bindValue(":id", linkId);
+
+        bool r = query.exec();
+
+        if(r)
+        {
+            if(query.next())
+            {
+                qlonglong folderId = query.value(0).toLongLong();
+                QString  url = query.value(1).toString();
+                QString tags = query.value(2).toString();
+                QString name = query.value(3).toString();
+
+                link = DatabaseUtils::LinkData(name, url, tags, linkId, folderId);
+            }
+        }
+        else
+        {
+            LOG_QUERY_ERROR(query);
+        }
+    }
+
+    sqlDb.close();
+
+    return link;
 }
 
 // Folder manipulation interface
@@ -709,7 +798,7 @@ void SQLiteDatabaseAdapter::initDatabase()
                                  "CREATE TABLE %1 ("
                                  "id INTEGER PRIMARY KEY, "
                                  "parent_id INTEGER, "
-                                 "name TEXT UNIQUE"
+                                 "name TEXT"
                                  ");").arg(folderTableName));
 
         if(!isOk)
@@ -743,9 +832,9 @@ void SQLiteDatabaseAdapter::initDatabase()
                                  "CREATE TABLE %1("
                                  "id INTEGER PRIMARY KEY, "
                                  "folder_id INTEGER, "
-                                 "url TEXT UNIQUE, "
+                                 "url TEXT, "
                                  "tags TEXT, "
-                                 "name TEXT UNIQUE"
+                                 "name TEXT"
                                  ");").arg(linksTableName));
 
         if(!isOk)
