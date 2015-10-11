@@ -3,7 +3,10 @@
 
 #include "bookmarkmodel.h"
 
+#include <QNetworkAccessManager>
 #include <QAbstractItemModel>
+#include <QXmlStreamReader>
+#include <QNetworkReply>
 #include <QApplication>
 #include <QMouseEvent>
 #include <QClipboard>
@@ -19,6 +22,13 @@ AddNewLink::AddNewLink(BookmarkModel *md,
     model(md)
 {
     ui->setupUi(this);
+    networkManager = new QNetworkAccessManager(this);
+    /*connect(networkManager, &QNetworkAccessManager::finished,
+            this, &AddNewLink::onReplyFinished);
+            */
+    connect(networkManager, SIGNAL(finished(QNetworkReply*)),
+            this, SLOT(onReplyFinished(QNetworkReply*)));
+    lastRequest = NULL;
 
     QClipboard *clipboard = QApplication::clipboard();
     if(clipboard)
@@ -93,4 +103,55 @@ void AddNewLink::onAccepted()
 
     if(index.isValid())
         model->insertRow(model->rowCount(index), index, item);
+}
+
+void AddNewLink::on_leLink_editingFinished()
+{
+    stopNetworkRequest();
+
+    if(ui->leName->text().isEmpty())
+    {
+        lastRequest = networkManager->get(QNetworkRequest(QUrl(ui->leLink->text())));
+    }
+}
+
+void AddNewLink::onReplyFinished(QNetworkReply *reply)
+{
+    if(!ui->leName->text().isEmpty())
+        return;
+
+    QXmlStreamReader reader(reply->readAll());
+
+    while (!reader.atEnd()) {
+        reader.readNext();
+        QStringRef tagName = reader.name();
+        if(reader.isStartElement() && tagName.compare("title", Qt::CaseInsensitive) == 0)
+        {
+            ui->leName->setText(reader.readElementText());
+            /*break*/;
+        }
+        else if(reader.isStartElement() && tagName.compare("meta", Qt::CaseInsensitive) == 0)
+        {
+            qDebug() << reader.readElementText();
+        }
+
+        if (reader.hasError()) {
+            qWarning() << "Error reading reply...";
+            break;
+        }
+    }
+    /*
+        QByteArray content= ;
+        content.
+        qDebug() << reply->header(((QNetworkRequest::KnownHeaders)i));
+    */
+}
+
+void AddNewLink::stopNetworkRequest(){
+    if(lastRequest != NULL && !lastRequest->isFinished())
+    {
+        lastRequest->abort();
+        lastRequest->deleteLater();
+        lastRequest = NULL;
+    }
 }

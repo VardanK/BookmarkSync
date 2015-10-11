@@ -286,17 +286,6 @@ bool BookmarkModel::setData(const QModelIndex &index, const QVariant &value, int
                 item->setName(value.toString());
             }
 
-            return true;
-            /*Entry e = bookmarks.at(index.row());
-            if(e.first == FOLDER)
-            {
-                setFolderName(bookmarks.at(index.row()).second, value.toString());
-            }
-            else
-            {
-                setBookmarkName(bookmarks.at(index.row()).second, value.toString());
-            }*/
-            //break;
         }
     default:
         break;
@@ -391,10 +380,28 @@ bool BookmarkModel::removeRows(int row, int count, const QModelIndex &parent)
 
 bool BookmarkModel::insertRow(int row, const QModelIndex &parent, const BookmarkItem &item)
 {
-    beginInsertRows(parent, row, row+1);
-    bool ret = getItem(parent)->insertChild(row, item);
-    endInsertRows();
-    return ret;
+    TreeItem *parentPtr = static_cast<TreeItem*>(parent.internalPointer());
+    if(parentPtr != NULL || parentPtr->getType() == ModelUtil::Folder)
+    {
+        beginInsertRows(parent, row, row+1);
+        bool ret = getItem(parent)->insertChild(row, item);
+        switch (item.type)
+        {
+        case ModelUtil::Folder:
+            database.createFolder(item.name, parentPtr->getId());
+            break;
+        case ModelUtil::Link:
+            database.createLink(item.name, item.url, item.tags, parentPtr->getId());
+            break;
+        default:
+            qWarning() << "Unknwon type " << item.type << " (" << item.name << ")";
+            break;
+        }
+        endInsertRows();
+        return ret;
+    }
+
+    return -1;
 }
 
 TreeItem* BookmarkModel::getItem(const QModelIndex &index) const
@@ -428,6 +435,7 @@ void BookmarkModel::onFolderDeleted(int folderId, int parentId)
 
 void BookmarkModel::onLinkCreated(int linkId, int folderId)
 {
+    qDebug() << __func__;
 }
 
 void BookmarkModel::onLinkMoved  (int linkId, int oldFolderId, int newFolderId)

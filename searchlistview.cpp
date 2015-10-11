@@ -67,11 +67,13 @@ void SearchListView::onCustomContextMenu(const QPoint &pos)
             {
                 // Context menu for folders
                 QMenu *contextMenu = new QMenu(this);
-                contextMenu->addAction(ui->actionAddFolder);
-                contextMenu->addAction(ui->actionRemoveFolder);
-                contextMenu->addSeparator();
+
                 contextMenu->addAction(ui->actionAddBookmark);
                 contextMenu->addAction(ui->actionRemoveBookmark);
+                contextMenu->addSeparator();
+                contextMenu->addAction(ui->actionAddFolder);
+                contextMenu->addAction(ui->actionRemoveFolder);
+
                 action = contextMenu->exec(ui->bookmarks->mapToGlobal(pos));
 
                 break;
