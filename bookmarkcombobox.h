@@ -1,7 +1,6 @@
 #ifndef BOOKMARKCOMBOBOX_H
 #define BOOKMARKCOMBOBOX_H
 
-#include <QStyledItemDelegate>
 #include <QComboBox>
 
 class QEvent;
@@ -15,7 +14,10 @@ public:
     ~BookmarkComboBox();
 
 public:
+//    void setModel(QAbstractItemModel *model);
     void setCurrentIndex(const QModelIndex &index);
+    QModelIndex currentModelIndex() const;
+
 
 private:
     bool eventFilter(QObject* object, QEvent* event);

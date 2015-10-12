@@ -12,7 +12,9 @@
 #include <QMouseEvent>
 #include <QClipboard>
 #include <QTreeView>
+#include <QTimer>
 #include <QDebug>
+#include <QMovie>
 #include <QUrl>
 
 AddNewLink::AddNewLink(BookmarkModel *md,
@@ -24,12 +26,19 @@ AddNewLink::AddNewLink(BookmarkModel *md,
 {
     ui->setupUi(this);
 
+    // Network members initialization
     networkManager = new QNetworkAccessManager(this);
     connect(networkManager, &QNetworkAccessManager::finished,
             this, &AddNewLink::onReplyFinished);
 
     lastRequest = NULL;
 
+    requestTimer = new QTimer(this);
+    requestTimer->setSingleShot(true);
+    connect(requestTimer,   &QTimer::timeout,
+            this,           &AddNewLink::onRequestTimer);
+
+    // Look for hyperlink in clipboard, if found set the link field value
     QClipboard *clipboard = QApplication::clipboard();
     if(clipboard)
     {
@@ -43,10 +52,17 @@ AddNewLink::AddNewLink(BookmarkModel *md,
         }
     }
 
+    // Set the model and selected index
     ui->cbFolders->setModel(model);
     ui->cbFolders->setCurrentIndex(parentIndex);
 
+    // Provide the feedback
     connect(this,SIGNAL(accepted()), this, SLOT(onAccepted()));
+
+    // Prepare preloader
+    QMovie *spinnerMovie = new QMovie(":/spinner.gif");
+    ui->preloaderLabel->setMovie(spinnerMovie);
+    spinnerMovie->start();
 }
 
 bool AddNewLink::eventFilter(QObject* object, QEvent* event)
@@ -77,17 +93,19 @@ void AddNewLink::onAccepted()
     QString tags = ui->leTags->text();
 
     BookmarkItem item(name, url, tags, -1, ModelUtil::Link);
-    ui->cbFolders->itemData(ui->cbFolders->currentIndex());
-    QModelIndex index = ui->cbFolders->view()->currentIndex();
+    QModelIndex index = ui->cbFolders->currentModelIndex();
 
     if(index.isValid())
+    {
+        // append to end
         model->insertRow(model->rowCount(index), index, item);
+    }
 }
 
 
 void AddNewLink::onReplyFinished(QNetworkReply *reply)
 {
-    if(!ui->leName->text().isEmpty())
+    if(ui->leName->isKeyPressed())
         return;
 
     QXmlStreamReader reader(reply->readAll());
@@ -97,15 +115,6 @@ void AddNewLink::onReplyFinished(QNetworkReply *reply)
 
         QStringRef tagName = reader.name();
         bool isStart = reader.isStartElement();
-
-//        if(!reader.isCharacters())
-//        {
-//            qDebug() << tagName << " (" << reader.tokenType() << ") !";
-//        }
-//        else
-//        {
-//            qDebug() << tagName << "." " (" << reader.tokenType() << ") !";
-//        }
 
         if(isStart && tagName.compare("title", Qt::CaseInsensitive) == 0)
         {
@@ -129,7 +138,7 @@ void AddNewLink::onReplyFinished(QNetworkReply *reply)
 }
 
 void AddNewLink::stopNetworkRequest(){
-    if(lastRequest != NULL && !lastRequest->isFinished())
+    if(lastRequest != NULL)// && !lastRequest->isFinished())
     {
         lastRequest->abort();
         lastRequest->deleteLater();
@@ -137,24 +146,43 @@ void AddNewLink::stopNetworkRequest(){
     }
 }
 
+void AddNewLink::onRequestTimer()
+{
+    qDebug() << "Timer trigerred, updating the fields";
+    updateFields();
+}
 
-void AddNewLink::on_leLink_editingFinished()
+void AddNewLink::updateFields()
 {
     stopNetworkRequest();
 
-    if(ui->leName->text().isEmpty())
+    qDebug() << "Update Start";
+    if(!ui->leName->isKeyPressed() && (!ui->leLink->text().isEmpty()))
     {
+        qDebug() << "Update InProcess";
         lastRequest = networkManager->get(QNetworkRequest(QUrl(ui->leLink->text())));
     }
+    qDebug() << "Update End";
+}
+
+void AddNewLink::startAnimation()
+{
+    ui->preloaderLabel->show();
+}
+
+void AddNewLink::stopAnimation()
+{
+    ui->preloaderLabel->hide();
+}
+
+void AddNewLink::on_leLink_editingFinished()
+{
+    updateFields();
 }
 
 
 void AddNewLink::on_leLink_textChanged(const QString &arg1)
 {
-    stopNetworkRequest();
-
-    if(ui->leName->text().isEmpty())
-    {
-        lastRequest = networkManager->get(QNetworkRequest(QUrl(ui->leLink->text())));
-    }
+    requestTimer->stop();
+    requestTimer->start(700);
 }

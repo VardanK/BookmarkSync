@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui webkitwidgets sql
+QT       += core gui webkitwidgets sql network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     addnewlink.cpp \
     sqlitedatabaseadapter.cpp \
     testdatabase.cpp \
-    bookmarkcombobox.cpp
+    bookmarkcombobox.cpp \
+    bookmarkvaluelineedit.cpp
 
 HEADERS  += mainwindow.h \
     searchlistview.h \
@@ -28,7 +29,8 @@ HEADERS  += mainwindow.h \
     sqlitedatabaseadapter.h \
     globaltypes.h \
     testdatabase.h \
-    bookmarkcombobox.h
+    bookmarkcombobox.h \
+    bookmarkvaluelineedit.h
 
 FORMS    += mainwindow.ui \
     searchlistview.ui \
@@ -37,4 +39,4 @@ FORMS    += mainwindow.ui \
 RESOURCES += \
     resources.qrc
 
-QMAKE_CXXFLAGS += -std=c++11
+QMAKE_CXXFLAGS += -std=c++11 -m32

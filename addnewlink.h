@@ -7,6 +7,7 @@
 #include <QModelIndex>
 
 class BookmarkModel;
+class QTimer;
 class QNetworkReply;
 class QNetworkAccessManager;
 
@@ -30,21 +31,30 @@ protected:
 private slots:
     void onAccepted();
     void onReplyFinished(QNetworkReply*);
-    void on_leLink_editingFinished();
+    void onRequestTimer();
 
+    void on_leLink_editingFinished();
     void on_leLink_textChanged(const QString &arg1);
 
 private:
     void stopNetworkRequest();
+    void updateFields();
+
+    void startAnimation();
+    void stopAnimation();
 
 signals:
     void addUrl(const BookmarkItem &item, const QModelIndex &index);
 
 private:
+    // Ui and model
     Ui::AddNewLink *ui;
     BookmarkModel *model;
+
+    // Netowrking
     QNetworkAccessManager *networkManager;
     QNetworkReply *lastRequest;
+    QTimer *requestTimer;
 };
 
 #endif // ADDNEWLINK_H

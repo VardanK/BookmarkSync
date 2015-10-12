@@ -14,8 +14,9 @@ BookmarkComboBox::BookmarkComboBox(QWidget *parent) :
     treeView->setAnimated(true);
     treeView->header()->hide();
 
-    setView(new QTreeView);
-    view()->viewport()->installEventFilter(this);
+    treeView->viewport()->installEventFilter(this);
+
+    setView(treeView);
 }
 
 bool BookmarkComboBox::eventFilter(QObject* object, QEvent* event)
@@ -38,15 +39,28 @@ BookmarkComboBox::~BookmarkComboBox()
 {
 }
 
+//void BookmarkComboBox::setModel(QAbstractItemModel *model)
+//{
+//    QComboBox::setModel(model);
+//}
+
 void BookmarkComboBox::setCurrentIndex(const QModelIndex &index)
 {
 
-    if(index.isValid())
+    QModelIndex validIndex = index;
+    if(!validIndex.isValid())
+    {
+        // If there is no index, try to get the first one from model
+        validIndex = model()->index(0,0);
+    }
+
+    if(validIndex.isValid())
     {
         QTreeView *treeView = qobject_cast<QTreeView*>(view());
         if(treeView)
         {
-            QModelIndex idx = index;
+            QModelIndex idx = validIndex;
+            // Expand the tree to select the index
             do
             {
                 treeView->setExpanded(idx, true);
@@ -54,8 +68,14 @@ void BookmarkComboBox::setCurrentIndex(const QModelIndex &index)
             }while(idx.isValid());
 
 
-            treeView->selectionModel()->select(index, QItemSelectionModel::Select);
-            setCurrentText(index.data().toString());
+            treeView->selectionModel()->select(validIndex, QItemSelectionModel::Select);
+            treeView->setCurrentIndex(validIndex);
+            setCurrentText(validIndex.data().toString());
         }
     }
+}
+
+QModelIndex BookmarkComboBox::currentModelIndex() const
+{
+    return view()->currentIndex();
 }

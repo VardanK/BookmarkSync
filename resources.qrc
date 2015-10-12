@@ -1,5 +1,5 @@
 <RCC>
-    <qresource lang="English" prefix="/new/main">
+    <qresource prefix="/new/main" lang="English">
         <file>res/ico/award_star_gold_2.ico</file>
         <file>res/ico/award_star_gold_3.ico</file>
         <file>res/ico/award_star_silver_2.ico</file>
@@ -26,5 +26,6 @@
         <file>res/ico/page_white_wrench.ico</file>
         <file>res/ico/thumb_down.ico</file>
         <file>res/ico/thumb_up.ico</file>
+        <file alias="spinner.gif">res/gif/spinner.gif</file>
     </qresource>
 </RCC>

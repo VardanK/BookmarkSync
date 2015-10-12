@@ -25,6 +25,16 @@
      <property name="fieldGrowthPolicy">
       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
      </property>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Link</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="BookmarkValueLineEdit" name="leLink"/>
+     </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
@@ -33,17 +43,7 @@
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QLineEdit" name="leName"/>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="leLink"/>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Link</string>
-       </property>
-      </widget>
+      <widget class="BookmarkValueLineEdit" name="leName"/>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="label_3">
@@ -53,10 +53,7 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QLineEdit" name="leTags"/>
-     </item>
-     <item row="4" column="1">
-      <widget class="BookmarkComboBox" name="cbFolders"/>
+      <widget class="BookmarkValueLineEdit" name="leTags"/>
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="label_4">
@@ -65,7 +62,35 @@
        </property>
       </widget>
      </item>
+     <item row="4" column="1">
+      <widget class="BookmarkComboBox" name="cbFolders"/>
+     </item>
     </layout>
+   </item>
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="preloaderLabel">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>40</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>40</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -84,6 +109,11 @@
    <class>BookmarkComboBox</class>
    <extends>QComboBox</extends>
    <header>bookmarkcombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>BookmarkValueLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>bookmarkvaluelineedit.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
