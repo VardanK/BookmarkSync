@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     bookmarkmodel.cpp \
     addnewlink.cpp \
     sqlitedatabaseadapter.cpp \
-    testdatabase.cpp
+    testdatabase.cpp \
+    bookmarkcombobox.cpp
 
 HEADERS  += mainwindow.h \
     searchlistview.h \
@@ -26,7 +27,8 @@ HEADERS  += mainwindow.h \
     addnewlink.h \
     sqlitedatabaseadapter.h \
     globaltypes.h \
-    testdatabase.h
+    testdatabase.h \
+    bookmarkcombobox.h
 
 FORMS    += mainwindow.ui \
     searchlistview.ui \

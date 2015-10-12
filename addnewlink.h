@@ -32,6 +32,8 @@ private slots:
     void onReplyFinished(QNetworkReply*);
     void on_leLink_editingFinished();
 
+    void on_leLink_textChanged(const QString &arg1);
+
 private:
     void stopNetworkRequest();
 

@@ -323,7 +323,7 @@ Qt::ItemFlags BookmarkModel::flags(const QModelIndex &index) const
 
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-    if(item->getType() == ModelUtil::Link)
+    //if(item->getType() == ModelUtil::Link)
         flags |= Qt::ItemIsEditable;
 
     return flags;

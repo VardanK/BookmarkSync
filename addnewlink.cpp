@@ -2,6 +2,7 @@
 #include "ui_addnewlink.h"
 
 #include "bookmarkmodel.h"
+#include "bookmarkcombobox.h"
 
 #include <QNetworkAccessManager>
 #include <QAbstractItemModel>
@@ -22,12 +23,11 @@ AddNewLink::AddNewLink(BookmarkModel *md,
     model(md)
 {
     ui->setupUi(this);
+
     networkManager = new QNetworkAccessManager(this);
-    /*connect(networkManager, &QNetworkAccessManager::finished,
+    connect(networkManager, &QNetworkAccessManager::finished,
             this, &AddNewLink::onReplyFinished);
-            */
-    connect(networkManager, SIGNAL(finished(QNetworkReply*)),
-            this, SLOT(onReplyFinished(QNetworkReply*)));
+
     lastRequest = NULL;
 
     QClipboard *clipboard = QApplication::clipboard();
@@ -43,29 +43,8 @@ AddNewLink::AddNewLink(BookmarkModel *md,
         }
     }
 
-    QTreeView *treeView = new QTreeView(ui->cbFolders);
-    treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    treeView->setAnimated(true);
-
     ui->cbFolders->setModel(model);
-    ui->cbFolders->setView(treeView);
-
-    ui->cbFolders->view()->viewport()->installEventFilter(this);
-
-    if(parentIndex.isValid())
-    {
-        /*QModelIndex parentIdx = parentIndex;
-        do
-        {
-            treeView->setExpanded(parentIdx, true);
-            parentIdx = parentIdx.parent();
-        }while(parentIdx.isValid());
-
-        */
-        //treeView->selectionModel()->select(parentIndex, QItemSelectionModel::Select);
-        ui->cbFolders->setCurrentText(parentIndex.data().toString());
-
-    }
+    ui->cbFolders->setCurrentIndex(parentIndex);
 
     connect(this,SIGNAL(accepted()), this, SLOT(onAccepted()));
 }
@@ -105,15 +84,6 @@ void AddNewLink::onAccepted()
         model->insertRow(model->rowCount(index), index, item);
 }
 
-void AddNewLink::on_leLink_editingFinished()
-{
-    stopNetworkRequest();
-
-    if(ui->leName->text().isEmpty())
-    {
-        lastRequest = networkManager->get(QNetworkRequest(QUrl(ui->leLink->text())));
-    }
-}
 
 void AddNewLink::onReplyFinished(QNetworkReply *reply)
 {
@@ -124,27 +94,38 @@ void AddNewLink::onReplyFinished(QNetworkReply *reply)
 
     while (!reader.atEnd()) {
         reader.readNext();
-        QStringRef tagName = reader.name();
-        if(reader.isStartElement() && tagName.compare("title", Qt::CaseInsensitive) == 0)
-        {
-            ui->leName->setText(reader.readElementText());
-            /*break*/;
-        }
-        else if(reader.isStartElement() && tagName.compare("meta", Qt::CaseInsensitive) == 0)
-        {
-            qDebug() << reader.readElementText();
-        }
 
-        if (reader.hasError()) {
-            qWarning() << "Error reading reply...";
+        QStringRef tagName = reader.name();
+        bool isStart = reader.isStartElement();
+
+//        if(!reader.isCharacters())
+//        {
+//            qDebug() << tagName << " (" << reader.tokenType() << ") !";
+//        }
+//        else
+//        {
+//            qDebug() << tagName << "." " (" << reader.tokenType() << ") !";
+//        }
+
+        if(isStart && tagName.compare("title", Qt::CaseInsensitive) == 0)
+        {
+            ui->leName->setText(reader.readElementText(QXmlStreamReader::IncludeChildElements));
             break;
         }
+        /*else if(isStart && (
+                    tagName.compare("div", Qt::CaseInsensitive) == 0 ||
+                    tagName.compare("p", Qt::CaseInsensitive) == 0
+                ))
+        {
+            qDebug() << reader.readElementText();
+        }*/
+
+
     }
-    /*
-        QByteArray content= ;
-        content.
-        qDebug() << reply->header(((QNetworkRequest::KnownHeaders)i));
-    */
+
+    if (reader.hasError()) {
+        qWarning() << reader.errorString();
+    }
 }
 
 void AddNewLink::stopNetworkRequest(){
@@ -153,5 +134,27 @@ void AddNewLink::stopNetworkRequest(){
         lastRequest->abort();
         lastRequest->deleteLater();
         lastRequest = NULL;
+    }
+}
+
+
+void AddNewLink::on_leLink_editingFinished()
+{
+    stopNetworkRequest();
+
+    if(ui->leName->text().isEmpty())
+    {
+        lastRequest = networkManager->get(QNetworkRequest(QUrl(ui->leLink->text())));
+    }
+}
+
+
+void AddNewLink::on_leLink_textChanged(const QString &arg1)
+{
+    stopNetworkRequest();
+
+    if(ui->leName->text().isEmpty())
+    {
+        lastRequest = networkManager->get(QNetworkRequest(QUrl(ui->leLink->text())));
     }
 }
