@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>180</height>
+    <width>380</width>
+    <height>255</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -45,52 +45,30 @@
      <item row="2" column="1">
       <widget class="BookmarkValueLineEdit" name="leName"/>
      </item>
-     <item row="3" column="0">
+     <item row="4" column="0">
       <widget class="QLabel" name="label_3">
        <property name="text">
         <string>Tags</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="4" column="1">
       <widget class="BookmarkValueLineEdit" name="leTags"/>
      </item>
-     <item row="4" column="0">
+     <item row="5" column="0">
       <widget class="QLabel" name="label_4">
        <property name="text">
         <string>Folder</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="BookmarkComboBox" name="cbFolders"/>
      </item>
+     <item row="3" column="1">
+      <widget class="ComplexLineEdit" name="widget" native="true"/>
+     </item>
     </layout>
-   </item>
-   <item alignment="Qt::AlignHCenter">
-    <widget class="QLabel" name="preloaderLabel">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>40</width>
-       <height>40</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>40</width>
-       <height>40</height>
-      </size>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -114,6 +92,12 @@
    <class>BookmarkValueLineEdit</class>
    <extends>QLineEdit</extends>
    <header>bookmarkvaluelineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ComplexLineEdit</class>
+   <extends>QWidget</extends>
+   <header>complexlineedit.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <tabstops>

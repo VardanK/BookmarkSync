@@ -4,6 +4,8 @@
 #include <QDebug>
 #include <QEvent>
 
+#include <QMovie>
+
 BookmarkValueLineEdit::BookmarkValueLineEdit(QWidget *parent) :
     QLineEdit(parent),
     keyPressed(false)

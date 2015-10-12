@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     sqlitedatabaseadapter.cpp \
     testdatabase.cpp \
     bookmarkcombobox.cpp \
-    bookmarkvaluelineedit.cpp
+    bookmarkvaluelineedit.cpp \
+    complexlineedit.cpp
 
 HEADERS  += mainwindow.h \
     searchlistview.h \
@@ -30,11 +31,13 @@ HEADERS  += mainwindow.h \
     globaltypes.h \
     testdatabase.h \
     bookmarkcombobox.h \
-    bookmarkvaluelineedit.h
+    bookmarkvaluelineedit.h \
+    complexlineedit.h
 
 FORMS    += mainwindow.ui \
     searchlistview.ui \
-    addnewlink.ui
+    addnewlink.ui \
+    complexlineedit.ui
 
 RESOURCES += \
     resources.qrc

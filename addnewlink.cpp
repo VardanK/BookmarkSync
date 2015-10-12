@@ -58,11 +58,6 @@ AddNewLink::AddNewLink(BookmarkModel *md,
 
     // Provide the feedback
     connect(this,SIGNAL(accepted()), this, SLOT(onAccepted()));
-
-    // Prepare preloader
-    QMovie *spinnerMovie = new QMovie(":/spinner.gif");
-    ui->preloaderLabel->setMovie(spinnerMovie);
-    spinnerMovie->start();
 }
 
 bool AddNewLink::eventFilter(QObject* object, QEvent* event)
@@ -167,12 +162,12 @@ void AddNewLink::updateFields()
 
 void AddNewLink::startAnimation()
 {
-    ui->preloaderLabel->show();
+    //ui->preloaderLabel->show();
 }
 
 void AddNewLink::stopAnimation()
 {
-    ui->preloaderLabel->hide();
+    //ui->preloaderLabel->hide();
 }
 
 void AddNewLink::on_leLink_editingFinished()
